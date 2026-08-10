@@ -326,6 +326,7 @@
           <div><label for="r-data-g1">Correção Grupo 1</label><input id="r-data-g1" type="date" /></div>
           <div><label for="r-data-g2">Correção Grupo 2</label><input id="r-data-g2" type="date" /></div>
         </div>
+        <div class="hint hide" id="r-aviso" style="margin-top:8px;color:var(--warn)"></div>
         <div class="grid3" style="margin-top:14px">
           <div><label for="r-banca">Banca</label>
             <select id="r-banca"><option value="ENEM">ENEM</option><option value="UECE">UECE</option><option value="UNIFOR">UNIFOR</option><option value="Atividade">Atividade</option></select></div>
@@ -333,6 +334,11 @@
             <select id="r-tipo"><option value="comum">Comum</option><option value="prova">Prova</option></select></div>
           <div><label for="r-etapa">Etapa letiva</label><select id="r-etapa"></select></div>
         </div>
+        <div class="grid2" id="r-pen-row" style="margin-top:14px">
+          <div><label for="r-pen">Penalidade na nota final (desconto)</label><input id="r-pen" type="number" min="0" step="0.4" value="0"></div>
+          <div><label for="r-pen-motivo">Justificativa da penalidade</label><input id="r-pen-motivo" type="text" value="Indisciplina"></div>
+        </div>
+        <div class="hint" id="r-pen-hint" style="margin-top:6px">Aplica-se só a redações comuns. Ex.: 0,4 por reclamação (0,8; 1,2…). Deixe 0 se não houver.</div>
         <div class="row-actions"><button class="primary" id="r-salvar">Criar redação</button>
           <span class="msg" id="r-msg"></span></div>
       </div>
@@ -352,6 +358,10 @@
         <button id="lt-import">Importar ENEM (planilha)</button>
       </div>
       <div id="lp-manual">
+      <div class="panel" id="hoje-box" style="background:var(--accent-soft);border-color:var(--accent)">
+        <div class="list-head"><h3 id="hoje-data" style="color:var(--accent-ink)"></h3><span class="hint" id="hoje-count"></span></div>
+        <div id="hoje-lista"></div>
+      </div>
       <div class="panel">
         <h3>Escolher redação para lançar</h3>
         <div class="grid2">
@@ -506,6 +516,7 @@
           <div class="panel">
             <div class="list-head"><h3 id="b-titulo"></h3><span class="hint" id="b-sub"></span></div>
             <p class="sub-note">A média da etapa considera apenas as redações com nota lançada. Faltas em redações comuns não entram no cálculo. Essa média é a que fecha o boletim.</p>
+            <div class="sub-note" id="b-penal" style="color:var(--danger)"></div>
             <div class="scroll-x"><table class="matrix" id="b-tbl"></table></div>
           </div>
         </div>
@@ -674,6 +685,17 @@
         <div style="overflow-x:auto;margin-top:8px"><table class="tbl" id="tz-lista"></table></div>
       </div>
       <div class="panel">
+        <h3>Dias de laboratório</h3>
+        <p class="hint">Defina o dia da semana do laboratório de cada série, por ano. Vale para as duas turmas da série; os grupos se alternam nesse mesmo dia, e as reposições caem nele também.</p>
+        <div class="grid3">
+          <div><label for="lb-ano">Ano</label><select id="lb-ano"></select></div>
+          <div><label for="lb-serie">Série</label><select id="lb-serie"></select></div>
+          <div><label for="lb-dia">Dia do laboratório</label><select id="lb-dia"></select></div>
+        </div>
+        <div class="row-actions"><button class="primary" id="lb-btn">Salvar dias</button><span class="msg" id="lb-msg"></span></div>
+        <div style="overflow-x:auto;margin-top:8px"><table class="tbl" id="lb-lista"></table></div>
+      </div>
+      <div class="panel">
         <h3>Backup dos dados</h3>
         <p class="hint">Baixa uma cópia completa (alunos, matrículas, redações e lançamentos) que fica com você. Bom fazer no fim de cada etapa.</p>
         <div class="row-actions"><button class="primary" id="bk-json">Baixar backup (JSON)</button><button id="bk-csv">Lançamentos em CSV</button><span class="msg" id="bk-msg"></span></div>
@@ -719,6 +741,7 @@
       <div id="md-criterios" style="margin-top:12px"></div>
       <div class="nota-box"><span class="hint" style="margin:0">Nota final (0 a 10)</span>
         <span class="v" id="md-nota">—</span></div>
+      <div class="hint hide" id="md-penal" style="margin-top:6px;color:var(--danger)"></div>
     </div>
 
     <div class="block hide" id="md-aval-block">
@@ -779,11 +802,16 @@
       <div><label for="er-data-g1">Correção Grupo 1</label><input id="er-data-g1" type="date"></div>
       <div><label for="er-data-g2">Correção Grupo 2</label><input id="er-data-g2" type="date"></div>
     </div>
+    <div class="hint hide" id="er-aviso" style="margin-top:8px;color:var(--warn)"></div>
     <div class="grid2" style="margin-top:14px">
       <div><label for="er-banca">Banca</label>
         <select id="er-banca"><option value="ENEM">ENEM</option><option value="UECE">UECE</option><option value="UNIFOR">UNIFOR</option><option value="Atividade">Atividade</option></select></div>
       <div><label for="er-tipo">Tipo</label>
         <select id="er-tipo"><option value="comum">Comum</option><option value="prova">Prova</option></select></div>
+    </div>
+    <div class="grid2" id="er-pen-row" style="margin-top:14px">
+      <div><label for="er-pen">Penalidade na nota final</label><input id="er-pen" type="number" min="0" step="0.4" value="0"></div>
+      <div><label for="er-pen-motivo">Justificativa</label><input id="er-pen-motivo" type="text" value="Indisciplina"></div>
     </div>
     <div class="hint" style="margin-top:12px">Mudar a banca de uma redação já lançada pode tornar as notas antigas incoerentes. Ajuste com cuidado.</div>
     <div class="msg err" id="er-msg"></div>
@@ -832,6 +860,32 @@ async function entrar(){
 async function sair(){ await sb.auth.signOut(); $('app').classList.add('hide'); $('login').classList.remove('hide'); $('lg-pass').value=''; }
 
 // ---------- REFERÊNCIAS ----------
+let LAB={};
+const DIAS_SEMANA=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+function proximoDiaSemana(dia){
+  const d=new Date(); d.setHours(0,0,0,0);
+  let add=(dia-d.getDay()+7)%7; d.setDate(d.getDate()+add);
+  const o=d.getTimezoneOffset(); return new Date(d-o*60000).toISOString().slice(0,10);
+}
+function addDias(iso,n){ const [y,m,dd]=iso.split('-').map(Number); const d=new Date(y,m-1,dd); d.setDate(d.getDate()+n); const o=d.getTimezoneOffset(); return new Date(d-o*60000).toISOString().slice(0,10); }
+function diaDaData(iso){ if(!iso) return null; const [y,m,dd]=iso.split('-').map(Number); return new Date(y,m-1,dd).getDay(); }
+function labDaTurma(ano,turma){ return LAB[ano+'|'+serieDe(turma)]||null; }
+function labelSerie(serie){ const t=TURMAS.find(x=>serieDe(x.codigo)===serie); return t? t.nome.replace(/\s+[A-Za-z0-9]$/,'') : serie; }
+function seriesDistintas(){ const seen=[]; TURMAS.forEach(t=>{ const s=serieDe(t.codigo); if(!seen.includes(s)) seen.push(s); }); return seen; }
+function prefillDatasRedacao(){
+  const ano=+$('r-ano').value, turma=$('r-turma').value, cfg=labDaTurma(ano,turma);
+  if(cfg&&cfg.dia!=null){ const g1=proximoDiaSemana(cfg.dia); $('r-data-g1').value=g1; $('r-data-g2').value=addDias(g1,7); }
+  avisoDatasRedacao();
+}
+function avisoDatasRedacao(){
+  const ano=+$('r-ano').value, turma=$('r-turma').value, cfg=labDaTurma(ano,turma);
+  const el=$('r-aviso'); if(!cfg||cfg.dia==null){ el.classList.add('hide'); el.textContent=''; return; }
+  const nome=labelSerie(serieDe(turma)); const av=[];
+  const d1=diaDaData($('r-data-g1').value); if(d1!=null&&d1!==cfg.dia) av.push(`Grupo 1 está em ${DIAS_SEMANA[d1]}.`);
+  const d2=diaDaData($('r-data-g2').value); if(d2!=null&&d2!==cfg.dia) av.push(`Grupo 2 está em ${DIAS_SEMANA[d2]}.`);
+  el.textContent = av.length ? `O laboratório da ${nome} é ${DIAS_SEMANA[cfg.dia]}. ${av.join(' ')}` : '';
+  el.classList.toggle('hide',!av.length);
+}
 async function carregarRefs(){
   const {data:t}=await sb.from('turmas').select('*').order('ordem');
   TURMAS=t||[]; TURMA_NOME={}; TURMAS.forEach(x=>TURMA_NOME[x.codigo]=x.nome);
@@ -840,11 +894,12 @@ async function carregarRefs(){
   const optT=turmasVisiveis().map(x=>`<option value="${x.codigo}">${x.nome}</option>`).join('');
   const optA=ANOS.map(x=>`<option value="${x}">${x}</option>`).join('');
   ['c-turma','r-turma','x-turma','k-turma','q-turma','b-turma','ea-turma','h-turma','pr-turma','pr-dturma','ex-turma','cc-turma','pd-turma','vc-turma','fq-turma','im-turma','fe-turma'].forEach(id=>$(id).innerHTML=optT);
-  ['c-ano','l-ano','r-ano','rl-ano','x-ano','k-ano','q-ano','b-ano','h-ano','pr-ano','pr-dano','ex-ano','cc-ano','pd-ano','fq-ano','im-ano','fe-ano'].forEach(id=>$(id).innerHTML=optA);
+  ['c-ano','l-ano','r-ano','rl-ano','x-ano','k-ano','q-ano','b-ano','h-ano','pr-ano','pr-dano','ex-ano','cc-ano','pd-ano','fq-ano','im-ano','fe-ano','lb-ano'].forEach(id=>$(id).innerHTML=optA);
   $('l-turma').innerHTML='<option value="">Selecione a turma…</option>'+optT;
   $('rl-turma').innerHTML='<option value="">Selecione a turma…</option>'+optT;
+  try{ const {data:ld}=await sb.from('laboratorio_dias').select('*'); LAB={}; (ld||[]).forEach(x=>LAB[x.ano+'|'+x.serie]={dia:x.dia}); }catch(e){ LAB={}; }
   $('r-data-g1').value=hojeISO(); $('r-data-g2').value=hojeISO();
-  atualizarRotulos();
+  atualizarRotulos(); prefillDatasRedacao(); togglePenRow();
 }
 let minhasTurmas=null;
 function turmasVisiveis(){ return (minhasTurmas&&minhasTurmas.length)? TURMAS.filter(t=>minhasTurmas.includes(t.codigo)) : TURMAS; }
@@ -968,12 +1023,24 @@ function sugerirBanca(){
   else if(r.includes('UNIFOR'))$('r-banca').value='UNIFOR';
   else $('r-banca').value='ENEM';
 }
+function togglePenRow(){
+  const show=$('r-tipo').value==='comum' && $('r-banca').value!=='Atividade';
+  $('r-pen-row').classList.toggle('hide',!show); $('r-pen-hint').classList.toggle('hide',!show);
+}
+function togglePenRowEdit(){
+  const show=$('er-tipo').value==='comum' && $('er-banca').value!=='Atividade';
+  $('er-pen-row').classList.toggle('hide',!show);
+}
 async function salvarRedacao(){
   const msg=$('r-msg'); msg.className='msg'; msg.textContent='';
   const g1=$('r-data-g1').value, g2=$('r-data-g2').value;
   if(!g1&&!g2){msg.className='msg err';msg.textContent='Informe ao menos uma data de correção.';return;}
+  const ehComum=$('r-tipo').value==='comum' && $('r-banca').value!=='Atividade';
+  const pen=ehComum? Math.max(0,+$('r-pen').value||0):0;
   const rec={ano:+$('r-ano').value,turma:$('r-turma').value,rotulo:$('r-rotulo').value,
-    data:(g1||g2), data_g1:g1||null, data_g2:g2||null, banca:$('r-banca').value,tipo:$('r-tipo').value,etapa:+$('r-etapa').value,criado_por:perfil?perfil.login:null};
+    data:(g1||g2), data_g1:g1||null, data_g2:g2||null, banca:$('r-banca').value,tipo:$('r-tipo').value,etapa:+$('r-etapa').value,
+    penalidade:pen, penalidade_motivo: pen>0?($('r-pen-motivo').value||'Indisciplina'):null,
+    criado_por:perfil?perfil.login:null};
   $('r-salvar').disabled=true;
   const {error}=await sb.from('redacoes').insert(rec);
   $('r-salvar').disabled=false;
@@ -1005,11 +1072,53 @@ async function listarRedacoes(){
 }
 
 // ---------- LANÇAR ----------
-function prepararLancar(){ atualizarEtapasLancar(); carregarRedacoesSelect(); }
+function prepararLancar(){ montarHoje(); atualizarEtapasLancar(); carregarRedacoesSelect(); }
 function atualizarEtapasLancar(){
   const turma=$('x-turma').value, atual=$('x-etapa').value;
   $('x-etapa').innerHTML='<option value="">Todas as etapas</option>'+opcoesEtapa(turma);
   if(atual && +atual<=nEtapas(turma)) $('x-etapa').value=atual;
+}
+async function montarHoje(){
+  const hoje=hojeISO();
+  const d=new Date();
+  let ext=d.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  ext=ext.charAt(0).toUpperCase()+ext.slice(1);
+  $('hoje-data').textContent=ext;
+  const lista=$('hoje-lista'); lista.innerHTML='';
+  let q=sb.from('redacoes').select('id,ano,turma,rotulo,banca,tipo,etapa,data,data_g1,data_g2')
+    .or(`data_g1.eq.${hoje},data_g2.eq.${hoje},data.eq.${hoje}`);
+  if(minhasTurmas&&minhasTurmas.length) q=q.in('turma',minhasTurmas);
+  const {data}=await q;
+  const reds=data||[];
+  if(!reds.length){ $('hoje-count').textContent='sem correções hoje'; lista.innerHTML='<div class="hint" style="margin:0">Nenhuma redação programada para correção hoje.</div>'; return; }
+  $('hoje-count').textContent=`${reds.length} ${reds.length===1?'redação':'redações'} para hoje`;
+  reds.sort((a,b)=> (a.turma<b.turma?-1:a.turma>b.turma?1:0));
+  reds.forEach(r=>{
+    const g1=r.data_g1===hoje, g2=r.data_g2===hoje;
+    let gtxt='', grupo=null;
+    if(g1&&g2){ gtxt='Grupos 1 e 2'; }
+    else if(g1){ gtxt='Grupo 1'; grupo=1; }
+    else if(g2){ gtxt='Grupo 2'; grupo=2; }
+    else { gtxt='Correção hoje'; }
+    const el=document.createElement('div'); el.className='item clic';
+    el.innerHTML=`<div class="info"><div class="m">${esc(r.rotulo)} · ${esc(TURMA_NOME[r.turma]||r.turma)}</div>
+      <div class="sub">${r.banca} · ${gtxt}${r.etapa?' · '+r.etapa+'ª etapa':''}</div></div>
+      <div><span class="st corrigida">abrir</span></div>`;
+    el.onclick=()=>irParaRedacaoHoje(r,grupo);
+    lista.appendChild(el);
+  });
+}
+async function irParaRedacaoHoje(r,grupo){
+  lancTab('manual');
+  $('x-ano').value=String(r.ano);
+  $('x-turma').value=r.turma;
+  atualizarEtapasLancar();
+  $('x-etapa').value = r.etapa ? String(r.etapa) : '';
+  await carregarRedacoesSelect();
+  $('x-red').value=String(r.id);
+  $('x-grupo').value = grupo ? String(grupo) : '';
+  await abrirRedacao();
+  const box=$('lanc-area'); if(box) box.scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function carregarRedacoesSelect(){
   const ano=+$('x-ano').value, turma=$('x-turma').value, etapa=$('x-etapa').value;
@@ -1075,6 +1184,9 @@ async function abrirModal(a){
   $('md-data').value=(data&&data.data_correcao)?data.data_correcao:hojeISO();
   // critérios ou avaliação
   if(redAtual.banca==='Atividade') montarAvaliacao(data); else montarCriterios(data);
+  const temPen=redAtual.tipo==='comum'&&redAtual.banca!=='Atividade'&&redAtual.penalidade>0;
+  $('md-penal').classList.toggle('hide',!temPen);
+  if(temPen)$('md-penal').textContent=`Penalidade da turma nesta redação: −${fmtN1(redAtual.penalidade)}${redAtual.penalidade_motivo?' ('+redAtual.penalidade_motivo+')':''}. A nota final no boletim já considera esse desconto.`;
   $('md-msg').textContent='';
   aplicarRegras(); recalcular();
   $('overlay').classList.remove('hide');
@@ -1350,6 +1462,8 @@ function abrirEditarRedacao(r){
   $('er-rotulo').value=r.rotulo;
   $('er-etapa').innerHTML=opcoesEtapa(r.turma); if(r.etapa)$('er-etapa').value=r.etapa;
   $('er-banca').value=r.banca; $('er-tipo').value=r.tipo;
+  $('er-pen').value=r.penalidade||0; $('er-pen-motivo').value=r.penalidade_motivo||'Indisciplina'; togglePenRowEdit();
+  avisoDatasEdit();
   $('er-apagar').style.display=(perfil&&perfil.papel==='coordenacao')?'inline-flex':'none';
   $('er-msg').textContent='';
   $('ov-red').classList.remove('hide');
@@ -1358,7 +1472,9 @@ async function salvarEditarRedacao(){
   const msg=$('er-msg'); msg.textContent='';
   const g1=$('er-data-g1').value, g2=$('er-data-g2').value;
   if(!g1&&!g2){msg.textContent='Informe ao menos uma data de correção.';return;}
-  const upd={rotulo:$('er-rotulo').value, data:(g1||g2), data_g1:g1||null, data_g2:g2||null, etapa:+$('er-etapa').value,banca:$('er-banca').value,tipo:$('er-tipo').value};
+  const ehComum=$('er-tipo').value==='comum' && $('er-banca').value!=='Atividade';
+  const pen=ehComum? Math.max(0,+$('er-pen').value||0):0;
+  const upd={rotulo:$('er-rotulo').value, data:(g1||g2), data_g1:g1||null, data_g2:g2||null, etapa:+$('er-etapa').value,banca:$('er-banca').value,tipo:$('er-tipo').value, penalidade:pen, penalidade_motivo: pen>0?($('er-pen-motivo').value||'Indisciplina'):null};
   $('er-salvar').disabled=true;
   const {error}=await sb.from('redacoes').update(upd).eq('id',redEdit.id);
   $('er-salvar').disabled=false;
@@ -1381,6 +1497,7 @@ const fmtN1 = n => n==null ? '—' : (+n).toFixed(1).replace('.',',');
 const dataBR = d => d ? d.split('-').reverse().join('/') : '';
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function faixa(n){ return n==null?'f-na':(n>=7?'f-ok':(n>=5?'f-md':'f-lo')); }
+function notaEfetiva(red,l){ if(!l||l.nota_final==null) return null; let n=+l.nota_final; if(red&&red.tipo==='comum'&&!l.zero_direto&&red.penalidade){ n=Math.max(0,+(n-(+red.penalidade)).toFixed(2)); } return n; }
 function notaCor(n){ return n>=7?'var(--brand2)':(n>=5?'var(--warn)':'var(--danger)'); }
 function pill(n){ return `<span class="pill ${faixa(n)}">${fmtN(n)}</span>`; }
 function freqLabel(l){
@@ -1488,7 +1605,8 @@ async function consAluno(){
   if(!mat){ $('k-res').classList.add('hide'); $('k-empty').classList.remove('hide'); return; }
   const ano=+$('k-ano').value, turma=$('k-turma').value;
   const irmas=irmasDaSerie(turma);
-  const {data:reds}=await sb.from('redacoes').select('id,rotulo,data,banca,tipo,etapa,turma').eq('ano',ano).in('turma',irmas.length?irmas:[turma]).neq('banca','Atividade');
+  const {data:reds}=await sb.from('redacoes').select('id,rotulo,data,banca,tipo,etapa,turma,penalidade').eq('ano',ano).in('turma',irmas.length?irmas:[turma]).neq('banca','Atividade');
+  const redById={}; (reds||[]).forEach(r=>redById[r.id]=r);
   const ordem=ordemRotulo(turma);
   const porRotulo={}; const rotDeRed={};
   (reds||[]).forEach(r=>{ (porRotulo[r.rotulo]=porRotulo[r.rotulo]||{reds:[],ids:[]}); porRotulo[r.rotulo].reds.push(r); porRotulo[r.rotulo].ids.push(r.id); rotDeRed[r.id]=r.rotulo; });
@@ -1496,9 +1614,9 @@ async function consAluno(){
   const allIds=(reds||[]).map(r=>r.id); const idsQ=allIds.length?allIds:[-1];
   const {data:meus}=await sb.from('lancamentos').select('*').eq('matricula',mat).in('redacao_id',idsQ);
   const meuPorRed={}; (meus||[]).forEach(l=>meuPorRed[l.redacao_id]=l);
-  const {data:todos}=await sb.from('lancamentos').select('redacao_id,nota_final').in('redacao_id',idsQ);
+  const {data:todos}=await sb.from('lancamentos').select('redacao_id,nota_final,zero_direto').in('redacao_id',idsQ);
   const serieSoma={},serieCnt={};
-  (todos||[]).forEach(t=>{ if(t.nota_final!=null){ const rot=rotDeRed[t.redacao_id]; serieSoma[rot]=(serieSoma[rot]||0)+(+t.nota_final); serieCnt[rot]=(serieCnt[rot]||0)+1; } });
+  (todos||[]).forEach(t=>{ const ne=notaEfetiva(redById[t.redacao_id],t); if(ne!=null){ const rot=rotDeRed[t.redacao_id]; serieSoma[rot]=(serieSoma[rot]||0)+ne; serieCnt[rot]=(serieCnt[rot]||0)+1; } });
 
   const labels=[], sAluno=[], sSerie=[], rows=[];
   let somaAl=0,cntAl=0,corr=0,faltas=0;
@@ -1506,15 +1624,15 @@ async function consAluno(){
   rotulos.forEach(rot=>{
     const grp=porRotulo[rot]; const r0=grp.reds[0];
     labels.push(rot);
-    let l=null, lTurma=null;
-    for(const rd of grp.reds){ if(meuPorRed[rd.id]){ l=meuPorRed[rd.id]; lTurma=rd.turma; break; } }
-    const nota=(l&&l.nota_final!=null)?+l.nota_final:null;
+    let l=null, lTurma=null, redMatch=null;
+    for(const rd of grp.reds){ if(meuPorRed[rd.id]){ l=meuPorRed[rd.id]; lTurma=rd.turma; redMatch=rd; break; } }
+    const nota=notaEfetiva(redMatch, l);
     sAluno.push(nota);
     sSerie.push(serieCnt[rot]?+(serieSoma[rot]/serieCnt[rot]).toFixed(2):null);
     if(nota!=null){ somaAl+=nota; cntAl++; corr++; }
     if(l&&(l.frequencia==='falta'||l.frequencia==='falta_justificada')) faltas++;
     if(r0.banca==='ENEM'&&l&&l.enem_c1!=null){ [1,2,3,4,5].forEach((i,k)=>{ compSoma[k]+=l['enem_c'+i]; compCnt[k]++; }); }
-    rows.push({rot,r:r0,l,nota,lTurma});
+    rows.push({rot,r:r0,l,nota,lTurma,red:redMatch});
   });
 
   const media=cntAl?somaAl/cntAl:null;
@@ -1540,7 +1658,8 @@ async function consAluno(){
   compBars('k-comp', compSoma.map((s,k)=> compCnt[k] ? +(s/compCnt[k]).toFixed(1) : null));
 
   let h=`<thead><tr><th>Redação</th><th>Turma</th><th>Data</th><th>Banca</th><th>Etapa</th><th>Frequência</th><th class="num">Nota</th><th>Detalhe</th></tr></thead><tbody>`;
-  rows.forEach(({rot,r,l,nota,lTurma})=>{
+  rows.forEach(({rot,r,l,nota,lTurma,red})=>{
+    const penTxt=(red&&red.tipo==='comum'&&red.penalidade&&l&&l.nota_final!=null&&!l.zero_direto)?` · penalidade −${fmtN1(red.penalidade)}`:'';
     h+=`<tr>
       <td class="mono">${esc(rot)}</td>
       <td>${lTurma?esc(TURMA_NOME[lTurma]||lTurma):'—'}</td>
@@ -1549,7 +1668,7 @@ async function consAluno(){
       <td>${r.etapa?r.etapa+'ª':'—'}</td>
       <td>${freqLabel(l)}${r.tipo==='prova'?' · prova':''}</td>
       <td class="num">${nota==null?'<span class="pill f-na">—</span>':pill(nota)}</td>
-      <td class="det">${esc(detalheLanc(r.banca,l))}</td>
+      <td class="det">${esc(detalheLanc(r.banca,l))}${penTxt}</td>
     </tr>`;
   });
   h+='</tbody>';
@@ -1579,7 +1698,7 @@ async function consRedacao(){
   const rows=[];
   (alunos||[]).forEach(a=>{
     const l=porMat[a.matricula];
-    const nota=(l&&l.nota_final!=null)?+l.nota_final:null;
+    const nota=notaEfetiva(r, l);
     labels.push(a.matricula.slice(-3)); valores.push(nota);
     if(nota!=null){ soma+=nota; cnt++; } else if(!l||l.frequencia==='presente') pend++;
     if(l&&(l.frequencia==='falta'||l.frequencia==='falta_justificada')) faltas++;
@@ -1589,7 +1708,7 @@ async function consRedacao(){
   const media=cnt?soma/cnt:null;
 
   $('q-titulo').textContent=`${r.rotulo} · ${TURMA_NOME[r.turma]||r.turma}`;
-  $('q-sub').innerHTML=`${dataBR(r.data)} · <span class="red-chip">${r.banca}</span> · ${r.tipo==='prova'?'Prova':'Comum'}${r.etapa?' · '+r.etapa+'ª etapa':''}`;
+  $('q-sub').innerHTML=`${dataBR(r.data)} · <span class="red-chip">${r.banca}</span> · ${r.tipo==='prova'?'Prova':'Comum'}${r.etapa?' · '+r.etapa+'ª etapa':''}${(r.tipo==='comum'&&r.penalidade)?` · <span style="color:var(--danger)">penalidade −${fmtN1(r.penalidade)}${r.penalidade_motivo?' ('+esc(r.penalidade_motivo)+')':''}</span>`:''}`;
   $('q-metrics').innerHTML=metricsHTML([
     {n:media==null?'—':fmtN1(media), l:'Média da turma'},
     {n:cnt, l:'Corrigidas'},
@@ -1624,16 +1743,17 @@ function consEtapaOpts(){ $('b-etapa').innerHTML=opcoesEtapa($('b-turma').value)
 async function consBoletim(){
   const ano=+$('b-ano').value, turma=$('b-turma').value, etapa=+$('b-etapa').value;
   const msg=$('b-msg'); msg.className='msg'; msg.textContent='';
-  const {data:reds}=await sb.from('redacoes').select('id,rotulo,data,banca').eq('ano',ano).eq('turma',turma).eq('etapa',etapa).neq('banca','Atividade').order('data').order('id');
+  const {data:reds}=await sb.from('redacoes').select('id,rotulo,data,banca,tipo,penalidade,penalidade_motivo').eq('ano',ano).eq('turma',turma).eq('etapa',etapa).neq('banca','Atividade').order('data').order('id');
   if(!reds||!reds.length){ $('b-res').classList.add('hide'); $('b-empty').classList.remove('hide'); $('b-csv').classList.add('hide'); return; }
   const {data:alunos}=await sb.from('matriculas_ano').select('matricula,grupo,horario').eq('ano',ano).eq('turma',turma).eq('ativo',true).order('horario');
   const ids=reds.map(r=>r.id);
-  const {data:lancs}=await sb.from('lancamentos').select('redacao_id,matricula,nota_final').in('redacao_id',ids);
-  const cel={}; (lancs||[]).forEach(l=>{ cel[l.matricula+'|'+l.redacao_id]=l.nota_final; });
+  const {data:lancs}=await sb.from('lancamentos').select('redacao_id,matricula,nota_final,zero_direto').in('redacao_id',ids);
+  const cel={}; (lancs||[]).forEach(l=>{ cel[l.matricula+'|'+l.redacao_id]=l; });
+  const redById={}; reds.forEach(r=>redById[r.id]=r);
 
   // cabeçalho
   let head=`<thead><tr><th class="stick">Matrícula</th>`;
-  reds.forEach(r=>head+=`<th title="${esc(dataBR(r.data))} · ${r.banca}">${esc(r.rotulo)}</th>`);
+  reds.forEach(r=>{ const pz=(r.tipo==='comum'&&r.penalidade)?' *':''; head+=`<th title="${esc(dataBR(r.data))} · ${r.banca}${pz?' · penalidade −'+fmtN1(r.penalidade):''}">${esc(r.rotulo)}${pz}</th>`; });
   head+=`<th class="med">Média</th></tr></thead>`;
 
   // linhas
@@ -1645,8 +1765,8 @@ async function consBoletim(){
     let linSoma=0, linCnt=0; let tds='';
     const csvRow=[a.matricula, a.grupo];
     reds.forEach((r,j)=>{
-      const v=cel[a.matricula+'|'+r.id];
-      if(v!=null){ const nv=+v; tds+=`<td>${pill(nv)}</td>`; linSoma+=nv; linCnt++; colSoma[j]+=nv; colCnt[j]++; csvRow.push(fmtN(nv)); }
+      const nv=notaEfetiva(r, cel[a.matricula+'|'+r.id]);
+      if(nv!=null){ tds+=`<td>${pill(nv)}</td>`; linSoma+=nv; linCnt++; colSoma[j]+=nv; colCnt[j]++; csvRow.push(fmtN(nv)); }
       else { tds+=`<td><span class="pill f-na">—</span></td>`; csvRow.push(''); }
     });
     const med=linCnt?linSoma/linCnt:null;
@@ -1668,6 +1788,8 @@ async function consBoletim(){
   $('b-tbl').innerHTML=head+body+foot;
   $('b-titulo').textContent=`${TURMA_NOME[turma]||turma} · ${etapa}ª etapa`;
   $('b-sub').textContent=`${ano} · ${reds.length} ${reds.length===1?'redação':'redações'} · ${(alunos||[]).length} alunos`;
+  const penReds=reds.filter(r=>r.tipo==='comum'&&r.penalidade);
+  $('b-penal').innerHTML=penReds.length?('<strong>* Penalidades já descontadas:</strong> '+penReds.map(r=>`${esc(r.rotulo)} −${fmtN1(r.penalidade)}${r.penalidade_motivo?' ('+esc(r.penalidade_motivo)+')':''}`).join(' · ')):'';
   boletimCSV={rows:csv, nome:`boletim_${turma}_etapa${etapa}_${ano}.csv`};
   $('b-csv').classList.remove('hide');
   $('b-empty').classList.add('hide'); $('b-res').classList.remove('hide');
@@ -1812,6 +1934,7 @@ async function adminCarregar(){
   $('vc-corretor').innerHTML = logins.map(l=>`<option value="${l.id}">${esc(l.login)}</option>`).join('');
   carregarVinculos();
   carregarTurmasAdmin();
+  carregarLabAdmin();
   $('ad-lista').innerHTML = '<thead><tr><th>Login</th><th>Papel</th></tr></thead><tbody>'+
     logins.map(l=>`<tr><td class="mono">${esc(l.login)}</td><td>${l.papel==='coordenacao'?'Coordenação':'Corretor'}</td></tr>`).join('')+'</tbody>';
 }
@@ -1949,6 +2072,55 @@ async function consPendencias(){
   });
   h+='</tbody>'; $('pd-tbl').innerHTML=h;
   $('pd-empty').classList.add('hide'); $('pd-res').classList.remove('hide');
+}
+
+// ---------- DIAS DE LABORATÓRIO (admin) ----------
+function opcoesDia(){ return '<option value="">—</option>'+DIAS_SEMANA.map((d,i)=>`<option value="${i}">${d}</option>`).join(''); }
+function avisoDatasEdit(){
+  if(!redEdit) return;
+  const cfg=labDaTurma(redEdit.ano,redEdit.turma); const el=$('er-aviso');
+  if(!cfg||cfg.dia==null){ el.classList.add('hide'); el.textContent=''; return; }
+  const nome=labelSerie(serieDe(redEdit.turma)); const av=[];
+  const d1=diaDaData($('er-data-g1').value); if(d1!=null&&d1!==cfg.dia) av.push(`Grupo 1 está em ${DIAS_SEMANA[d1]}.`);
+  const d2=diaDaData($('er-data-g2').value); if(d2!=null&&d2!==cfg.dia) av.push(`Grupo 2 está em ${DIAS_SEMANA[d2]}.`);
+  el.textContent = av.length ? `O laboratório da ${nome} é ${DIAS_SEMANA[cfg.dia]}. ${av.join(' ')}` : '';
+  el.classList.toggle('hide',!av.length);
+}
+function preencherLabSelects(){
+  $('lb-serie').innerHTML=seriesDistintas().map(s=>`<option value="${s}">${esc(labelSerie(s))}</option>`).join('');
+  $('lb-dia').innerHTML=opcoesDia();
+}
+function preencherLabForm(){
+  const cfg=LAB[(+$('lb-ano').value)+'|'+$('lb-serie').value];
+  $('lb-dia').value = cfg&&cfg.dia!=null? String(cfg.dia):'';
+}
+async function carregarLabAdmin(){
+  preencherLabSelects(); preencherLabForm();
+  const {data,error}=await sb.from('laboratorio_dias').select('*').order('ano',{ascending:false}).order('serie');
+  const el=$('lb-lista');
+  if(error){ el.innerHTML='<tbody><tr><td class="hint">A tabela ainda não existe. Rode o SQL "laboratorio_dias.sql".</td></tr></tbody>'; return; }
+  const rows=data||[];
+  el.innerHTML = rows.length ? ('<thead><tr><th>Ano</th><th>Série</th><th>Dia do laboratório</th><th></th></tr></thead><tbody>'+
+    rows.map(r=>`<tr><td>${r.ano}</td><td>${esc(labelSerie(r.serie))}</td><td>${r.dia!=null?DIAS_SEMANA[r.dia]:'—'}</td><td class="num"><button class="lb-del" data-ano="${r.ano}" data-serie="${esc(r.serie)}">remover</button></td></tr>`).join('')+'</tbody>')
+    : '<tbody><tr><td class="hint">Nenhum dia cadastrado ainda.</td></tr></tbody>';
+  el.querySelectorAll('.lb-del').forEach(b=>b.onclick=()=>removerLab(+b.dataset.ano,b.dataset.serie));
+}
+async function salvarLab(){
+  const msg=$('lb-msg'); msg.className='msg';
+  const ano=+$('lb-ano').value, serie=$('lb-serie').value;
+  const dia=$('lb-dia').value===''?null:+$('lb-dia').value;
+  $('lb-btn').disabled=true;
+  const {error}=await sb.from('laboratorio_dias').upsert({ano,serie,dia},{onConflict:'ano,serie'});
+  $('lb-btn').disabled=false;
+  if(error){ msg.className='msg err'; msg.textContent='Erro: '+error.message; return; }
+  msg.className='msg ok'; msg.textContent='Dia salvo.';
+  await carregarRefs(); carregarLabAdmin();
+}
+async function removerLab(ano,serie){
+  if(!confirm(`Remover o dia de laboratório da ${labelSerie(serie)} em ${ano}?`)) return;
+  const {error}=await sb.from('laboratorio_dias').delete().eq('ano',ano).eq('serie',serie);
+  if(error){ alert('Erro: '+error.message); return; }
+  await carregarRefs(); carregarLabAdmin();
 }
 
 // ---------- TURMAS (admin) ----------
@@ -2269,6 +2441,7 @@ $('k-pdf').onclick=gerarBoletimAluno;
 $('bk-json').onclick=baixarBackup; $('bk-csv').onclick=baixarLancCSV;
 $('vc-btn').onclick=criarVinculo;
 $('tz-btn').onclick=adicionarTurma;
+$('lb-btn').onclick=salvarLab; $('lb-ano').onchange=preencherLabForm; $('lb-serie').onchange=preencherLabForm; $('er-data-g1').onchange=avisoDatasEdit; $('er-data-g2').onchange=avisoDatasEdit; $('er-tipo').onchange=togglePenRowEdit; $('er-banca').onchange=togglePenRowEdit;
 $('h-ano').onchange=listarHorarios; $('h-turma').onchange=listarHorarios;
 $('k-ano').onchange=consCarregarAlunos; $('k-turma').onchange=consCarregarAlunos; $('k-aluno').onchange=consAluno;
 $('q-ano').onchange=consCarregarRedacoes; $('q-turma').onchange=consCarregarRedacoes; $('q-red').onchange=consRedacao;
@@ -2278,7 +2451,8 @@ $('pr-listar').onclick=prListar; $('pr-exec').onclick=prExec; $('pr-all').onchan
 $('ex-listar').onclick=exListar; $('ex-exec').onclick=exExec; $('ex-all').onchange=()=>chkTodos('ex-lista','ex-all','ex-count');
 $('c-salvar').onclick=salvarAluno; $('m-conf').onclick=conferir; $('m-imp').onclick=importar;
 $('l-ano').onchange=listarAlunos; $('l-turma').onchange=listarAlunos;
-$('r-turma').onchange=atualizarRotulos; $('r-rotulo').onchange=sugerirBanca; $('r-salvar').onclick=salvarRedacao;
+$('r-turma').onchange=()=>{ atualizarRotulos(); prefillDatasRedacao(); }; $('r-ano').onchange=prefillDatasRedacao; $('r-data-g1').onchange=avisoDatasRedacao; $('r-data-g2').onchange=avisoDatasRedacao;
+$('r-rotulo').onchange=()=>{ sugerirBanca(); togglePenRow(); }; $('r-tipo').onchange=togglePenRow; $('r-banca').onchange=togglePenRow; $('r-salvar').onclick=salvarRedacao;
 $('rl-ano').onchange=listarRedacoes; $('rl-turma').onchange=listarRedacoes;
 $('x-ano').onchange=carregarRedacoesSelect; $('x-turma').onchange=()=>{ atualizarEtapasLancar(); carregarRedacoesSelect(); }; $('x-etapa').onchange=carregarRedacoesSelect; $('x-red').onchange=abrirRedacao; $('x-grupo').onchange=listarParaLancar;
 document.querySelectorAll('#md-freq button').forEach(b=>b.onclick=()=>{setFreq(b.dataset.f);aplicarRegras();recalcular();});
