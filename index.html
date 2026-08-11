@@ -189,9 +189,13 @@
   .crit-btn{flex:1 1 46px;min-width:46px;padding:9px 4px;border:1px solid var(--line-strong);background:var(--card);color:var(--ink);border-radius:8px;font-family:'Spectral',serif;font-size:15px;cursor:pointer}
   .crit-btn:hover{border-color:var(--accent)}
   .crit-btn.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  #md-aval{flex-direction:column;gap:8px}
+  #md-aval .crit-btn{width:100%;flex:none;text-align:center}
   .fc-p{color:var(--brand2-ink);font-weight:600}
   .fc-f{color:var(--danger);font-weight:700}
   .fc-fj{color:var(--warn);font-weight:600}
+  #cons-subs button{font-size:13px}
+  #cons-subs{margin-top:-6px}
 </style>
 </head>
 <body>
@@ -315,6 +319,11 @@
 
     <!-- =============== SEÇÃO REDAÇÕES =============== -->
     <section id="sec-red" class="hide">
+      <div class="tabs">
+        <button id="rt-uma" class="on">Criar uma</button>
+        <button id="rt-massa">Criar em massa</button>
+      </div>
+      <div id="rp-uma">
       <div class="panel">
         <h3>Criar redação</h3>
         <div class="grid2">
@@ -342,6 +351,28 @@
         <div class="row-actions"><button class="primary" id="r-salvar">Criar redação</button>
           <span class="msg" id="r-msg"></span></div>
       </div>
+      </div><!-- fim rp-uma -->
+
+      <div id="rp-massa" class="hide">
+        <div class="panel">
+          <h3>Criar redações em massa</h3>
+          <p class="hint">Cria as mesmas redações para todas as turmas da série de uma vez, ideal para programar a etapa inteira. Penalidades, se houver, edite depois na redação específica.</p>
+          <div class="grid3">
+            <div><label for="rm-ano">Ano</label><select id="rm-ano"></select></div>
+            <div><label for="rm-serie">Série</label><select id="rm-serie"></select></div>
+            <div><label for="rm-etapa">Etapa</label><select id="rm-etapa"></select></div>
+          </div>
+          <div class="hint" id="rm-turmas" style="margin-top:8px"></div>
+          <div style="overflow-x:auto;margin-top:12px"><table class="tbl" id="rm-tbl"></table></div>
+          <div class="row-actions" style="margin-top:10px">
+            <button id="rm-add">+ Adicionar linha</button>
+            <button id="rm-datas">Preencher datas em sequência</button>
+            <button class="primary" id="rm-criar">Criar todas</button>
+            <span class="msg" id="rm-msg"></span>
+          </div>
+        </div>
+      </div>
+
       <div class="list-head"><h3>Redações criadas</h3><span class="hint" id="rl-count"></span></div>
       <div class="filters">
         <select id="rl-ano"></select>
@@ -424,16 +455,13 @@
 
     <!-- =============== SEÇÃO CONSULTAS =============== -->
     <section id="sec-cons" class="hide">
-      <div class="tabs">
-        <button id="ct-aluno" class="on">Histórico do aluno</button>
-        <button id="ct-red">Notas por redação</button>
-        <button id="ct-etapa">Fechamento por etapa</button>
-        <button id="ct-hor">Horários</button>
-        <button id="ct-comp">Competências</button>
-        <button id="ct-pend">Pendências</button>
-        <button id="ct-freq">Frequência</button>
-        <button id="ct-fetapa">Freq. da etapa</button>
+      <div class="tabs" id="cons-grupos">
+        <button data-g="desempenho" class="on">Desempenho</button>
+        <button data-g="fechamento">Fechamento</button>
+        <button data-g="freq">Frequência</button>
+        <button data-g="prog">Programação</button>
       </div>
+      <div class="tabs" id="cons-subs"></div>
 
       <!-- VISÃO 1: HISTÓRICO DO ALUNO -->
       <div id="cp-aluno">
@@ -525,11 +553,17 @@
       <!-- VISÃO 4: QUADRO DE HORÁRIOS -->
       <div id="cp-hor" class="hide">
         <div class="panel">
-          <div class="grid2">
+          <div class="grid3">
             <div><label for="h-ano">Ano</label><select id="h-ano"></select></div>
             <div><label for="h-turma">Turma</label><select id="h-turma"></select></div>
+            <div><label for="h-etapa">Etapa (para os dias)</label><select id="h-etapa"></select></div>
           </div>
-          <div class="row-actions"><button id="h-print">Imprimir folha de matrículas e notas</button><button id="h-cartoes">Imprimir cartões de identificação</button></div>
+          <div class="row-actions">
+            <button id="h-print-mh">Folha de horários</button>
+            <button id="h-print-dias">Folha de horários com dias</button>
+            <button id="h-print">Folha para notas</button>
+            <button id="h-cartoes">Cartões de identificação</button>
+          </div>
         </div>
         <div id="h-res"></div>
         <div class="empty hide" id="h-empty">Nenhum aluno ativo nesta turma.</div>
@@ -629,6 +663,26 @@
           </div>
         </div>
         <div class="empty hide" id="fe-empty">Nenhuma redação nesta etapa.</div>
+      </div>
+
+      <!-- VISÃO 9: CALENDÁRIO -->
+      <div id="cp-cal" class="hide">
+        <div class="panel">
+          <div class="grid3">
+            <div><label for="fc-ano">Ano</label><select id="fc-ano"></select></div>
+            <div><label for="fc-turma">Turma</label><select id="fc-turma"></select></div>
+            <div><label for="fc-etapa">Etapa</label><select id="fc-etapa"></select></div>
+          </div>
+          <div class="row-actions"><button id="fc-print" class="hide">Imprimir calendário</button></div>
+        </div>
+        <div id="fc-res" class="hide">
+          <div class="panel">
+            <div class="list-head"><h3 id="fc-titulo"></h3><span class="hint" id="fc-sub"></span></div>
+            <p class="sub-note">Programação das correções, com o dia de cada grupo. Reflete o calendário da série.</p>
+            <div id="fc-corpo"></div>
+          </div>
+        </div>
+        <div class="empty hide" id="fc-empty">Nenhuma redação programada para este filtro.</div>
       </div>
     </section>
 
@@ -831,8 +885,19 @@ const DOMINIO = "@laboratorio.com";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = (id)=>document.getElementById(id);
 
-const ROTULOS_BASE = Array.from({length:20},(_,i)=>'R'+(i+1)).concat(['AVP','AVB']);
+const ROTULOS_BASE = Array.from({length:20},(_,i)=>'R'+(i+1)).concat(['AVP','AVB']).concat(['ATV']);
 const ROTULOS_3EM  = ['1SAS','2SAS','3SAS','4SAS','5SAS','6SAS','1UECE','2UECE','3UECE','4UECE','1UNIFOR','2UNIFOR','3UNIFOR','4UNIFOR'];
+function rotuloComContexto(rotulo, etapa, dataISO){
+  if(rotulo==='ATV'){ if(!dataISO) return 'ATV'; const [y,m,d]=dataISO.split('-'); return 'ATV '+d+'/'+m; }
+  if(rotulo==='AVP'||rotulo==='AVB') return `${rotulo} E${etapa}`;
+  return rotulo;
+}
+function ordRotulo(rot, ordem){
+  if(ordem[rot]!=null) return ordem[rot];
+  const m=rot.match(/^(AVP|AVB)\s*E?\s*(\d+)/);
+  if(m && ordem[m[1]]!=null) return ordem[m[1]] + (+m[2])/100;
+  return 999;
+}
 const MOTIVOS_ZERO = ['Fuga total ao tema','Não atendimento ao tipo textual','Texto insuficiente','Cópia integral dos textos motivadores','Fere os direitos humanos','Texto em branco','Anulado (desenhos, impropérios, identificação)'];
 const ENEM_VALS = [0,40,80,120,160,200];
 const AVAL_OPCOES=[['excelente','Excelente'],['satisfatoria','Satisfatória'],['mediana','Mediana'],['incompleta','Incompleta'],['nao_realizada','Não realizada']];
@@ -893,8 +958,8 @@ async function carregarRefs(){
   ANOS=(a||[]).map(x=>x.ano);
   const optT=turmasVisiveis().map(x=>`<option value="${x.codigo}">${x.nome}</option>`).join('');
   const optA=ANOS.map(x=>`<option value="${x}">${x}</option>`).join('');
-  ['c-turma','r-turma','x-turma','k-turma','q-turma','b-turma','ea-turma','h-turma','pr-turma','pr-dturma','ex-turma','cc-turma','pd-turma','vc-turma','fq-turma','im-turma','fe-turma'].forEach(id=>$(id).innerHTML=optT);
-  ['c-ano','l-ano','r-ano','rl-ano','x-ano','k-ano','q-ano','b-ano','h-ano','pr-ano','pr-dano','ex-ano','cc-ano','pd-ano','fq-ano','im-ano','fe-ano','lb-ano'].forEach(id=>$(id).innerHTML=optA);
+  ['c-turma','r-turma','x-turma','k-turma','q-turma','b-turma','ea-turma','h-turma','pr-turma','pr-dturma','ex-turma','cc-turma','pd-turma','vc-turma','fq-turma','im-turma','fe-turma','fc-turma'].forEach(id=>$(id).innerHTML=optT);
+  ['c-ano','l-ano','r-ano','rl-ano','x-ano','k-ano','q-ano','b-ano','h-ano','pr-ano','pr-dano','ex-ano','cc-ano','pd-ano','fq-ano','im-ano','fe-ano','lb-ano','rm-ano','fc-ano'].forEach(id=>$(id).innerHTML=optA);
   $('l-turma').innerHTML='<option value="">Selecione a turma…</option>'+optT;
   $('rl-turma').innerHTML='<option value="">Selecione a turma…</option>'+optT;
   try{ const {data:ld}=await sb.from('laboratorio_dias').select('*'); LAB={}; (ld||[]).forEach(x=>LAB[x.ano+'|'+x.serie]={dia:x.dia}); }catch(e){ LAB={}; }
@@ -1019,9 +1084,11 @@ function atualizarRotulos(){
 }
 function sugerirBanca(){
   const r=$('r-rotulo').value||'';
-  if(r.includes('UECE'))$('r-banca').value='UECE';
+  if(r.startsWith('ATV'))$('r-banca').value='Atividade';
+  else if(r.includes('UECE'))$('r-banca').value='UECE';
   else if(r.includes('UNIFOR'))$('r-banca').value='UNIFOR';
   else $('r-banca').value='ENEM';
+  $('r-tipo').value=(r==='AVP'||r==='AVB')?'prova':'comum';
 }
 function togglePenRow(){
   const show=$('r-tipo').value==='comum' && $('r-banca').value!=='Atividade';
@@ -1041,12 +1108,72 @@ async function salvarRedacao(){
     data:(g1||g2), data_g1:g1||null, data_g2:g2||null, banca:$('r-banca').value,tipo:$('r-tipo').value,etapa:+$('r-etapa').value,
     penalidade:pen, penalidade_motivo: pen>0?($('r-pen-motivo').value||'Indisciplina'):null,
     criado_por:perfil?perfil.login:null};
+  rec.rotulo=rotuloComContexto(rec.rotulo, rec.etapa, rec.data);
   $('r-salvar').disabled=true;
   const {error}=await sb.from('redacoes').insert(rec);
   $('r-salvar').disabled=false;
   if(error){msg.className='msg err';msg.textContent=error.code==='23505'?'Essa redação já existe para esta turma e ano.':'Erro: '+error.message;return;}
   msg.className='msg ok'; msg.textContent='Redação criada.';
   listarRedacoes(); setTimeout(()=>msg.textContent='',2500);
+}
+function redTab(w){
+  $('rt-uma').classList.toggle('on',w==='uma'); $('rt-massa').classList.toggle('on',w==='massa');
+  $('rp-uma').classList.toggle('hide',w!=='uma'); $('rp-massa').classList.toggle('hide',w!=='massa');
+  if(w==='massa') prepararRedMassa();
+}
+function turmasDaSerie(serie){ return TURMAS.filter(t=>serieDe(t.codigo)===serie).map(t=>t.codigo); }
+function serieRepresentativa(){ return turmasDaSerie($('rm-serie').value)[0]||$('rm-serie').value; }
+function montarRmEtapa(){ $('rm-etapa').innerHTML=opcoesEtapa(serieRepresentativa()); }
+function montarRmTurmasHint(){ const ts=turmasDaSerie($('rm-serie').value); $('rm-turmas').textContent = ts.length?('Serão criadas para: '+ts.map(c=>TURMA_NOME[c]||c).join(', ')):'Nenhuma turma nesta série.'; }
+function rmHeader(){ $('rm-tbl').innerHTML='<thead><tr><th>Rótulo</th><th>Banca</th><th>Tipo</th><th>Correção G1</th><th>Correção G2</th><th></th></tr></thead><tbody></tbody>'; }
+function addRmRow(){
+  const rots=rotulosDaTurma(serieRepresentativa());
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td><select class="rm-rot">${rots.map(x=>`<option>${x}</option>`).join('')}</select></td>
+    <td><select class="rm-banca"><option>ENEM</option><option>UECE</option><option>UNIFOR</option><option>Atividade</option></select></td>
+    <td><select class="rm-tipo"><option value="comum">Comum</option><option value="prova">Prova</option></select></td>
+    <td><input class="rm-g1" type="date"></td>
+    <td><input class="rm-g2" type="date"></td>
+    <td class="num"><button class="rm-del" title="Remover">×</button></td>`;
+  tr.querySelector('.rm-del').onclick=()=>tr.remove();
+  $('rm-tbl').querySelector('tbody').appendChild(tr);
+}
+function prepararRedMassa(){
+  $('rm-serie').innerHTML=seriesDistintas().map(s=>`<option value="${s}">${esc(labelSerie(s))}</option>`).join('');
+  montarRmEtapa(); montarRmTurmasHint(); rmHeader(); addRmRow();
+}
+function rmSequenciaDatas(){
+  const cfg=labDaTurma(+$('rm-ano').value, serieRepresentativa());
+  const base=(cfg&&cfg.dia!=null)? proximoDiaSemana(cfg.dia) : hojeISO();
+  [...$('rm-tbl').querySelectorAll('tbody tr')].forEach((tr,i)=>{ const g1=addDias(base,i*14); tr.querySelector('.rm-g1').value=g1; tr.querySelector('.rm-g2').value=addDias(g1,7); });
+}
+async function criarEmMassa(){
+  const msg=$('rm-msg'); msg.className='msg'; msg.textContent='';
+  const ano=+$('rm-ano').value, serie=$('rm-serie').value, etapa=+$('rm-etapa').value;
+  const turmas=turmasDaSerie(serie);
+  if(!turmas.length){ msg.className='msg err'; msg.textContent='Nenhuma turma nesta série.'; return; }
+  const defs=[];
+  [...$('rm-tbl').querySelectorAll('tbody tr')].forEach(tr=>{
+    const rotulo=tr.querySelector('.rm-rot').value;
+    const g1=tr.querySelector('.rm-g1').value, g2=tr.querySelector('.rm-g2').value;
+    if(!rotulo || (!g1&&!g2)) return;
+    defs.push({rotulo, banca:tr.querySelector('.rm-banca').value, tipo:tr.querySelector('.rm-tipo').value, g1, g2});
+  });
+  if(!defs.length){ msg.className='msg err'; msg.textContent='Preencha ao menos uma redação com rótulo e data.'; return; }
+  $('rm-criar').disabled=true; msg.textContent='Criando…';
+  let criadas=0, existiam=0, erros=0;
+  for(const d of defs){
+    for(const turma of turmas){
+      const rotuloFinal = rotuloComContexto(d.rotulo, etapa, d.g1||d.g2);
+      const rec={ano,turma,rotulo:rotuloFinal,data:(d.g1||d.g2),data_g1:d.g1||null,data_g2:d.g2||null,banca:d.banca,tipo:(d.rotulo==='AVP'||d.rotulo==='AVB')?'prova':d.tipo,etapa,penalidade:0,penalidade_motivo:null,criado_por:perfil?perfil.login:null};
+      const {error}=await sb.from('redacoes').insert(rec);
+      if(!error) criadas++; else if(error.code==='23505') existiam++; else erros++;
+    }
+  }
+  $('rm-criar').disabled=false;
+  msg.className = erros?'msg err':'msg ok';
+  msg.textContent = `Criadas ${criadas}.${existiam?(' Já existiam '+existiam+'.'):''}${erros?(' Erros: '+erros+'.'):''}`;
+  listarRedacoes();
 }
 async function listarRedacoes(){
   const ano=+$('rl-ano').value, turma=$('rl-turma').value;
@@ -1475,6 +1602,7 @@ async function salvarEditarRedacao(){
   const ehComum=$('er-tipo').value==='comum' && $('er-banca').value!=='Atividade';
   const pen=ehComum? Math.max(0,+$('er-pen').value||0):0;
   const upd={rotulo:$('er-rotulo').value, data:(g1||g2), data_g1:g1||null, data_g2:g2||null, etapa:+$('er-etapa').value,banca:$('er-banca').value,tipo:$('er-tipo').value, penalidade:pen, penalidade_motivo: pen>0?($('er-pen-motivo').value||'Indisciplina'):null};
+  upd.rotulo=rotuloComContexto(upd.rotulo, upd.etapa, upd.data);
   $('er-salvar').disabled=true;
   const {error}=await sb.from('redacoes').update(upd).eq('id',redEdit.id);
   $('er-salvar').disabled=false;
@@ -1583,14 +1711,27 @@ function compBars(elId, medias){ // medias = [c1..c5] (média 0-200 ou null)
   });
 }
 
-function prepararConsultas(){ consCarregarAlunos(); consCarregarRedacoes(); consEtapaOpts(); listarHorarios(); carregarFreqRedacoes(); atualizarEtapasFE(); }
+function prepararConsultas(){ consCarregarAlunos(); consCarregarRedacoes(); consEtapaOpts(); listarHorarios(); carregarFreqRedacoes(); atualizarEtapasFE(); montarCalEtapa(); montarHEtapa(); consGrupo('desempenho'); }
+const TODAS_SUBS=['aluno','red','comp','etapa','pend','freq','fetapa','hor','cal'];
+const CONS_GRUPOS={
+  desempenho:{subs:[['aluno','Por aluno'],['red','Por redação'],['comp','Por competência']]},
+  fechamento:{subs:[['etapa','Boletim da etapa'],['pend','Pendências']]},
+  freq:{subs:[['freq','Por redação'],['fetapa','Por etapa']]},
+  prog:{subs:[['hor','Horários'],['cal','Calendário']]}
+};
 function consTab(which){
   if(which==='comp') setTimeout(consCompetencias,0);
   if(which==='pend') setTimeout(consPendencias,0);
-  [['aluno','ct-aluno','cp-aluno'],['red','ct-red','cp-red'],['etapa','ct-etapa','cp-etapa'],['hor','ct-hor','cp-hor'],['comp','ct-comp','cp-comp'],['pend','ct-pend','cp-pend'],['freq','ct-freq','cp-freq'],['fetapa','ct-fetapa','cp-fetapa']].forEach(([w,tb,pn])=>{
-    $(tb).classList.toggle('on', w===which);
-    $(pn).classList.toggle('hide', w!==which);
-  });
+  if(which==='cal') setTimeout(consCalendario,0);
+  TODAS_SUBS.forEach(w=>{ const pn=$('cp-'+w); if(pn) pn.classList.toggle('hide', w!==which); });
+  document.querySelectorAll('#cons-subs button').forEach(b=>b.classList.toggle('on', b.dataset.w===which));
+}
+function consGrupo(g){
+  document.querySelectorAll('#cons-grupos button').forEach(b=>b.classList.toggle('on', b.dataset.g===g));
+  const subs=CONS_GRUPOS[g].subs;
+  $('cons-subs').innerHTML=subs.map(([w,lb])=>`<button data-w="${w}">${esc(lb)}</button>`).join('');
+  $('cons-subs').querySelectorAll('button').forEach(b=>b.onclick=()=>consTab(b.dataset.w));
+  consTab(subs[0][0]);
 }
 
 // ---------- VISÃO 1: HISTÓRICO DO ALUNO ----------
@@ -1610,7 +1751,7 @@ async function consAluno(){
   const ordem=ordemRotulo(turma);
   const porRotulo={}; const rotDeRed={};
   (reds||[]).forEach(r=>{ (porRotulo[r.rotulo]=porRotulo[r.rotulo]||{reds:[],ids:[]}); porRotulo[r.rotulo].reds.push(r); porRotulo[r.rotulo].ids.push(r.id); rotDeRed[r.id]=r.rotulo; });
-  const rotulos=Object.keys(porRotulo).sort((a,b)=>((ordem[a]??999)-(ordem[b]??999)));
+  const rotulos=Object.keys(porRotulo).sort((a,b)=>(ordRotulo(a,ordem)-ordRotulo(b,ordem)));
   const allIds=(reds||[]).map(r=>r.id); const idsQ=allIds.length?allIds:[-1];
   const {data:meus}=await sb.from('lancamentos').select('*').eq('matricula',mat).in('redacao_id',idsQ);
   const meuPorRed={}; (meus||[]).forEach(l=>meuPorRed[l.redacao_id]=l);
@@ -1808,13 +1949,24 @@ function irmasDaSerie(t){ const s=serieDe(t); return TURMAS.filter(x=>serieDe(x.
 function ordemRotulo(t){ const arr=rotulosDaTurma(t); const m={}; arr.forEach((r,i)=>m[r]=i); return m; }
 
 // ---------- VISÃO 4: QUADRO DE HORÁRIOS ----------
+function montarHEtapa(){ $('h-etapa').innerHTML='<option value="">Todas as etapas</option>'+opcoesEtapa($('h-turma').value); }
+async function diasPorGrupo(ano,turma,etapa){
+  let q=sb.from('redacoes').select('data,data_g1,data_g2,etapa').eq('ano',ano).eq('turma',turma);
+  if(etapa) q=q.eq('etapa',+etapa);
+  const {data:reds}=await q.order('data');
+  const g1=new Set(), g2=new Set();
+  (reds||[]).forEach(r=>{ if(r.data_g1)g1.add(r.data_g1); if(r.data_g2)g2.add(r.data_g2); });
+  const ord=arr=>[...arr].sort();
+  return {1:ord(g1),2:ord(g2)};
+}
 async function listarHorarios(){
-  const ano=+$('h-ano').value, turma=$('h-turma').value;
+  const ano=+$('h-ano').value, turma=$('h-turma').value, etapa=$('h-etapa').value;
   if(!turma){ $('h-res').innerHTML=''; return; }
   const {data}=await sb.from('matriculas_ano').select('matricula,grupo,horario').eq('ano',ano).eq('turma',turma).eq('ativo',true).order('grupo').order('horario');
   const res=$('h-res'); res.innerHTML='';
   if(!data||!data.length){ $('h-empty').classList.remove('hide'); return; }
   $('h-empty').classList.add('hide');
+  const dias=await diasPorGrupo(ano,turma,etapa);
   [1,2].forEach(g=>{
     const alunos=data.filter(a=>a.grupo===g);
     if(!alunos.length) return;
@@ -1822,11 +1974,39 @@ async function listarHorarios(){
     const horas=Object.keys(porH).sort();
     let linhas='';
     horas.forEach(h=>{ linhas+=`<tr><td class="mono">${h}</td><td>${porH[h].map(m=>`<span class="mono">${m}</span>`).join(', ')}</td><td class="num">${porH[h].length}</td></tr>`; });
+    const dd=dias[g]||[];
+    const diasLinha = dd.length ? `<p class="sub-note" style="margin:0 0 10px"><strong>Dias de laboratório:</strong> ${dd.map(calDia).join(' · ')}</p>` : '<p class="sub-note" style="margin:0 0 10px">Sem datas cadastradas para este grupo neste filtro.</p>';
     const panel=document.createElement('div'); panel.className='panel';
     panel.innerHTML=`<div class="list-head"><h3>${esc(TURMA_NOME[turma]||turma)} · Grupo ${g}</h3><span class="hint">${alunos.length} alunos · ${horas.length} horários</span></div>
+      ${diasLinha}
       <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Horário</th><th>Alunos</th><th class="num">Qtd</th></tr></thead><tbody>${linhas}</tbody></table></div>`;
     res.appendChild(panel);
   });
+}
+async function imprimirRoster(comDias){
+  const ano=+$('h-ano').value, turma=$('h-turma').value, etapa=$('h-etapa').value;
+  const {data}=await sb.from('matriculas_ano').select('matricula,grupo,horario').eq('ano',ano).eq('turma',turma).eq('ativo',true).order('grupo').order('horario');
+  if(!data||!data.length){ alert('Nenhum aluno ativo nesta turma.'); return; }
+  const dias = comDias ? await diasPorGrupo(ano,turma,etapa) : null;
+  let corpo='';
+  [1,2].forEach(g=>{
+    const al=data.filter(a=>a.grupo===g); if(!al.length) return;
+    corpo+=`<div class="sec"><h3>${esc(TURMA_NOME[turma]||turma)} · Grupo ${g}</h3>`;
+    const dd = comDias ? (dias[g]||[]) : [];
+    if(comDias && dd.length){
+      corpo+='<table class="folha"><thead><tr><th>Matrícula</th><th>Horário</th>'+dd.map(d=>`<th>${calDia(d)}</th>`).join('')+'</tr></thead><tbody>';
+      al.forEach(a=>{ corpo+=`<tr><td class="mono">${a.matricula}</td><td>${(a.horario||'').slice(0,5)}</td>${dd.map(()=>'<td></td>').join('')}</tr>`; });
+      corpo+='</tbody></table>';
+    } else {
+      if(comDias) corpo+='<p class="sub-note">Sem datas cadastradas para este grupo neste filtro.</p>';
+      corpo+='<table class="folha"><thead><tr><th>Matrícula</th><th>Horário</th></tr></thead><tbody>';
+      al.forEach(a=>{ corpo+=`<tr><td class="mono">${a.matricula}</td><td>${(a.horario||'').slice(0,5)}</td></tr>`; });
+      corpo+='</tbody></table>';
+    }
+    corpo+='</div>';
+  });
+  const et = etapa ? ` · ${etapa}ª etapa` : '';
+  abrirImpressao(comDias?'Matrículas, horários e dias':'Matrículas e horários', `${TURMA_NOME[turma]||turma} · ${ano}${comDias?et:''}`, corpo);
 }
 
 // ---------- LOTE: checklists ----------
@@ -2364,6 +2544,40 @@ function imprimirFreqEtapa(){
   abrirImpressao('Frequência da etapa', `${TURMA_NOME[turma]||turma} · ${etapa}ª etapa · ${ano}`, corpo);
 }
 
+// ---------- CALENDÁRIO ----------
+let calData=null;
+function montarCalEtapa(){ $('fc-etapa').innerHTML='<option value="">Todas as etapas</option>'+opcoesEtapa($('fc-turma').value); }
+function calDia(iso){ if(!iso) return '—'; const d=diaDaData(iso); const ab=['dom','seg','ter','qua','qui','sex','sáb'][d]; return `${dataBR(iso)} (${ab})`; }
+function calCorpo(reds){
+  const groups={}; reds.forEach(r=>{ (groups[r.etapa||0]=groups[r.etapa||0]||[]).push(r); });
+  const etapas=Object.keys(groups).map(Number).sort((a,b)=>a-b);
+  let html='';
+  etapas.forEach(et=>{
+    html+=`<h4 style="margin:16px 0 6px;color:var(--accent-ink);font-size:15px">${et?et+'ª etapa':'Sem etapa'}</h4>`;
+    html+='<div style="overflow-x:auto"><table class="tbl folha"><thead><tr><th>Rótulo</th><th>Tipo</th><th>Grupo 1</th><th>Grupo 2</th></tr></thead><tbody>';
+    groups[et].forEach(r=>{ const tt=r.banca==='Atividade'?'Atividade':`${r.banca} · ${r.tipo==='prova'?'Prova':'Comum'}`; html+=`<tr><td class="mono">${esc(r.rotulo)}</td><td>${tt}</td><td>${calDia(r.data_g1||r.data)}</td><td>${calDia(r.data_g2)}</td></tr>`; });
+    html+='</tbody></table></div>';
+  });
+  return html;
+}
+async function consCalendario(){
+  const ano=+$('fc-ano').value, turma=$('fc-turma').value, etapa=$('fc-etapa').value;
+  let q=sb.from('redacoes').select('id,rotulo,data,data_g1,data_g2,banca,tipo,etapa').eq('ano',ano).eq('turma',turma);
+  if(etapa) q=q.eq('etapa',+etapa);
+  const {data:reds}=await q.order('etapa').order('data').order('id');
+  if(!reds||!reds.length){ $('fc-res').classList.add('hide'); $('fc-empty').classList.remove('hide'); $('fc-print').classList.add('hide'); return; }
+  $('fc-corpo').innerHTML=calCorpo(reds);
+  $('fc-titulo').textContent=`Calendário · ${TURMA_NOME[turma]||turma}`;
+  $('fc-sub').textContent=`${ano} · ${reds.length} ${reds.length===1?'redação':'redações'}`;
+  calData={reds,turma,ano};
+  $('fc-print').classList.remove('hide');
+  $('fc-empty').classList.add('hide'); $('fc-res').classList.remove('hide');
+}
+function imprimirCalendario(){
+  if(!calData) return;
+  abrirImpressao('Calendário de correções', `${TURMA_NOME[calData.turma]||calData.turma} · ${calData.ano}`, calCorpo(calData.reds));
+}
+
 // ---------- CARTÕES DE IDENTIFICAÇÃO ----------
 async function imprimirCartoes(){
   const ano=+$('h-ano').value, turma=$('h-turma').value;
@@ -2429,7 +2643,8 @@ $('lg-btn').onclick=entrar; $('lg-pass').addEventListener('keydown',e=>{if(e.key
 $('sair').onclick=sair;
 $('nav-cad').onclick=()=>irPara('cad'); $('nav-red').onclick=()=>irPara('red'); $('nav-lanc').onclick=()=>irPara('lanc'); $('nav-cons').onclick=()=>irPara('cons'); $('nav-admin').onclick=()=>irPara('admin');
 $('ad-criar').onclick=criarLogin; $('ts-btn').onclick=trocarSenha; $('an-btn').onclick=abrirAno;
-$('ct-aluno').onclick=()=>consTab('aluno'); $('ct-red').onclick=()=>consTab('red'); $('ct-etapa').onclick=()=>consTab('etapa'); $('ct-hor').onclick=()=>consTab('hor'); $('ct-comp').onclick=()=>consTab('comp'); $('ct-pend').onclick=()=>consTab('pend'); $('ct-freq').onclick=()=>consTab('freq'); $('ct-fetapa').onclick=()=>consTab('fetapa');
+document.querySelectorAll('#cons-grupos button').forEach(b=>b.onclick=()=>consGrupo(b.dataset.g));
+$('fc-ano').onchange=consCalendario; $('fc-turma').onchange=()=>{ montarCalEtapa(); consCalendario(); }; $('fc-etapa').onchange=consCalendario; $('fc-print').onclick=imprimirCalendario;
 $('fe-turma').onchange=atualizarEtapasFE; $('fe-gerar').onclick=consFreqEtapa; $('fe-print').onclick=imprimirFreqEtapa;
 $('cc-ano').onchange=consCompetencias; $('cc-turma').onchange=consCompetencias;
 $('pd-ano').onchange=consPendencias; $('pd-turma').onchange=consPendencias; $('pd-grupo').onchange=consPendencias;
@@ -2442,7 +2657,9 @@ $('bk-json').onclick=baixarBackup; $('bk-csv').onclick=baixarLancCSV;
 $('vc-btn').onclick=criarVinculo;
 $('tz-btn').onclick=adicionarTurma;
 $('lb-btn').onclick=salvarLab; $('lb-ano').onchange=preencherLabForm; $('lb-serie').onchange=preencherLabForm; $('er-data-g1').onchange=avisoDatasEdit; $('er-data-g2').onchange=avisoDatasEdit; $('er-tipo').onchange=togglePenRowEdit; $('er-banca').onchange=togglePenRowEdit;
-$('h-ano').onchange=listarHorarios; $('h-turma').onchange=listarHorarios;
+$('er-rotulo').onchange=()=>{ const rr=$('er-rotulo').value; if(rr==='AVP'||rr==='AVB')$('er-tipo').value='prova'; togglePenRowEdit(); };
+$('h-ano').onchange=listarHorarios; $('h-turma').onchange=()=>{ montarHEtapa(); listarHorarios(); }; $('h-etapa').onchange=listarHorarios;
+$('h-print-mh').onclick=()=>imprimirRoster(false); $('h-print-dias').onclick=()=>imprimirRoster(true);
 $('k-ano').onchange=consCarregarAlunos; $('k-turma').onchange=consCarregarAlunos; $('k-aluno').onchange=consAluno;
 $('q-ano').onchange=consCarregarRedacoes; $('q-turma').onchange=consCarregarRedacoes; $('q-red').onchange=consRedacao;
 $('b-turma').onchange=consEtapaOpts; $('b-gerar').onclick=consBoletim; $('b-csv').onclick=baixarBoletimCSV;
@@ -2453,6 +2670,8 @@ $('c-salvar').onclick=salvarAluno; $('m-conf').onclick=conferir; $('m-imp').oncl
 $('l-ano').onchange=listarAlunos; $('l-turma').onchange=listarAlunos;
 $('r-turma').onchange=()=>{ atualizarRotulos(); prefillDatasRedacao(); }; $('r-ano').onchange=prefillDatasRedacao; $('r-data-g1').onchange=avisoDatasRedacao; $('r-data-g2').onchange=avisoDatasRedacao;
 $('r-rotulo').onchange=()=>{ sugerirBanca(); togglePenRow(); }; $('r-tipo').onchange=togglePenRow; $('r-banca').onchange=togglePenRow; $('r-salvar').onclick=salvarRedacao;
+$('rt-uma').onclick=()=>redTab('uma'); $('rt-massa').onclick=()=>redTab('massa');
+$('rm-serie').onchange=()=>{ montarRmEtapa(); montarRmTurmasHint(); rmHeader(); addRmRow(); }; $('rm-add').onclick=addRmRow; $('rm-datas').onclick=rmSequenciaDatas; $('rm-criar').onclick=criarEmMassa;
 $('rl-ano').onchange=listarRedacoes; $('rl-turma').onchange=listarRedacoes;
 $('x-ano').onchange=carregarRedacoesSelect; $('x-turma').onchange=()=>{ atualizarEtapasLancar(); carregarRedacoesSelect(); }; $('x-etapa').onchange=carregarRedacoesSelect; $('x-red').onchange=abrirRedacao; $('x-grupo').onchange=listarParaLancar;
 document.querySelectorAll('#md-freq button').forEach(b=>b.onclick=()=>{setFreq(b.dataset.f);aplicarRegras();recalcular();});
