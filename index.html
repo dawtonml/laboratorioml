@@ -240,6 +240,7 @@
         <button id="t-ind" class="on">Cadastro individual</button>
         <button id="t-massa">Importar planilha</button>
         <button id="t-lote" class="hide">Turma em lote</button>
+        <button id="t-hor">Horários da turma</button>
       </div>
       <div class="panel" id="p-ind">
         <div class="field"><label for="c-mat">Matrícula do aluno</label>
@@ -306,6 +307,26 @@
             <div><label for="ex-data">Data de saída</label><input id="ex-data" type="date"></div>
           </div>
           <div class="row-actions"><button class="primary" id="ex-exec" style="background:var(--danger);border-color:var(--danger)">Marcar saída dos selecionados</button><span class="msg" id="ex-msg"></span></div>
+        </div>
+      </div>
+      <div class="panel hide" id="p-hor">
+        <h3>Horários de atendimento (individual)</h3>
+        <p class="hint">Informe a faixa de horários e o tempo de cada atendimento. O sistema monta as opções e você escolhe a faixa de cada aluno. As faixas que ninguém escolher aparecem como livres.</p>
+        <div class="grid3">
+          <div><label for="hh-ano">Ano</label><select id="hh-ano"></select></div>
+          <div><label for="hh-turma">Turma</label><select id="hh-turma"></select></div>
+          <div><label for="hh-grupo">Grupo</label><select id="hh-grupo"><option value="1">Grupo 1</option><option value="2">Grupo 2</option></select></div>
+        </div>
+        <div class="grid3" style="margin-top:14px">
+          <div><label for="hh-inicio">Início</label><input id="hh-inicio" type="time" value="14:00"></div>
+          <div><label for="hh-dur">Tempo por atendimento</label><select id="hh-dur"><option value="10">10 minutos</option><option value="15" selected>15 minutos</option></select></div>
+          <div><label for="hh-fim">Fim</label><input id="hh-fim" type="time" value="17:00"></div>
+        </div>
+        <div class="row-actions"><button id="hh-gerar">Montar faixas e listar alunos</button><span class="msg" id="hh-msg"></span></div>
+        <div id="hh-wrap" class="hide">
+          <div class="sub-note" id="hh-resumo" style="margin:10px 0"></div>
+          <div style="overflow-x:auto"><table class="tbl" id="hh-tbl"></table></div>
+          <div class="row-actions" style="margin-top:10px"><button class="primary" id="hh-salvar">Salvar horários</button><span class="msg" id="hh-salvar-msg"></span></div>
         </div>
       </div>
       <div class="list-head"><h3>Alunos cadastrados</h3><span class="hint" id="l-count"></span></div>
@@ -958,8 +979,8 @@ async function carregarRefs(){
   ANOS=(a||[]).map(x=>x.ano);
   const optT=turmasVisiveis().map(x=>`<option value="${x.codigo}">${x.nome}</option>`).join('');
   const optA=ANOS.map(x=>`<option value="${x}">${x}</option>`).join('');
-  ['c-turma','r-turma','x-turma','k-turma','q-turma','b-turma','ea-turma','h-turma','pr-turma','pr-dturma','ex-turma','cc-turma','pd-turma','vc-turma','fq-turma','im-turma','fe-turma','fc-turma'].forEach(id=>$(id).innerHTML=optT);
-  ['c-ano','l-ano','r-ano','rl-ano','x-ano','k-ano','q-ano','b-ano','h-ano','pr-ano','pr-dano','ex-ano','cc-ano','pd-ano','fq-ano','im-ano','fe-ano','lb-ano','rm-ano','fc-ano'].forEach(id=>$(id).innerHTML=optA);
+  ['c-turma','r-turma','x-turma','k-turma','q-turma','b-turma','ea-turma','h-turma','pr-turma','pr-dturma','ex-turma','hh-turma','cc-turma','pd-turma','vc-turma','fq-turma','im-turma','fe-turma','fc-turma'].forEach(id=>$(id).innerHTML=optT);
+  ['c-ano','l-ano','r-ano','rl-ano','x-ano','k-ano','q-ano','b-ano','h-ano','pr-ano','pr-dano','ex-ano','hh-ano','cc-ano','pd-ano','fq-ano','im-ano','fe-ano','lb-ano','rm-ano','fc-ano'].forEach(id=>$(id).innerHTML=optA);
   $('l-turma').innerHTML='<option value="">Selecione a turma…</option>'+optT;
   $('rl-turma').innerHTML='<option value="">Selecione a turma…</option>'+optT;
   try{ const {data:ld}=await sb.from('laboratorio_dias').select('*'); LAB={}; (ld||[]).forEach(x=>LAB[x.ano+'|'+x.serie]={dia:x.dia}); }catch(e){ LAB={}; }
@@ -2078,12 +2099,65 @@ async function exExec(){
 }
 
 // ---------- abas do cadastro ----------
+function hmToMin(s){ const [h,m]=s.split(':').map(Number); return h*60+m; }
+function minToHM(x){ const h=Math.floor(x/60), m=x%60; return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'); }
+function gerarFaixasHorario(){
+  const ini=$('hh-inicio').value, fim=$('hh-fim').value, dur=+$('hh-dur').value;
+  if(!ini||!fim||!dur) return [];
+  const a=hmToMin(ini), b=hmToMin(fim); if(b<=a) return [];
+  const out=[]; for(let t=a; t<b; t+=dur) out.push(minToHM(t)); return out;
+}
+let hhAlunos=[], hhFaixas=[];
+async function montarHorariosLista(){
+  const msg=$('hh-msg'); msg.className='msg'; msg.textContent='';
+  const ano=+$('hh-ano').value, turma=$('hh-turma').value, grupo=+$('hh-grupo').value;
+  hhFaixas=gerarFaixasHorario();
+  if(!hhFaixas.length){ msg.className='msg err'; msg.textContent='Confira início, fim e o tempo por atendimento.'; return; }
+  const {data}=await sb.from('matriculas_ano').select('id,matricula,horario').eq('ano',ano).eq('turma',turma).eq('grupo',grupo).eq('ativo',true).order('horario').order('matricula');
+  hhAlunos=data||[];
+  if(!hhAlunos.length){ $('hh-wrap').classList.add('hide'); msg.className='msg err'; msg.textContent='Nenhum aluno ativo neste grupo.'; return; }
+  let h='<thead><tr><th>Matrícula</th><th style="width:200px">Horário</th></tr></thead><tbody>';
+  hhAlunos.forEach(a=>{
+    const atual=(a.horario||'').slice(0,5);
+    const extra=(atual && !hhFaixas.includes(atual)) ? `<option value="${atual}">${atual} (fora da faixa)</option>` : '';
+    const opts='<option value="">—</option>'+extra+hhFaixas.map(f=>`<option value="${f}">${f}</option>`).join('');
+    h+=`<tr><td class="mono">${a.matricula}</td><td><select class="hh-sel" data-id="${a.id}">${opts}</select></td></tr>`;
+  });
+  h+='</tbody>'; $('hh-tbl').innerHTML=h;
+  const sels=[...$('hh-tbl').querySelectorAll('.hh-sel')];
+  sels.forEach((s,i)=>{ s.value=(hhAlunos[i].horario||'').slice(0,5); s.onchange=atualizarResumoHorarios; });
+  atualizarResumoHorarios();
+  $('hh-wrap').classList.remove('hide');
+}
+function atualizarResumoHorarios(){
+  const usados=[...$('hh-tbl').querySelectorAll('.hh-sel')].map(s=>s.value).filter(Boolean);
+  const cont={}; usados.forEach(v=>cont[v]=(cont[v]||0)+1);
+  const livres=hhFaixas.filter(f=>!cont[f]);
+  const repetidos=Object.keys(cont).filter(v=>cont[v]>1).sort();
+  let txt=`<strong>Faixas livres (${livres.length}):</strong> ${livres.length?livres.join(' · '):'nenhuma'}`;
+  if(repetidos.length) txt+=` &nbsp;·&nbsp; <span style="color:var(--danger)"><strong>Repetidas:</strong> ${repetidos.join(', ')}</span>`;
+  $('hh-resumo').innerHTML=txt;
+}
+async function salvarHorarios(){
+  const msg=$('hh-salvar-msg'); msg.className='msg'; msg.textContent='Salvando…';
+  const sels=[...$('hh-tbl').querySelectorAll('.hh-sel')];
+  $('hh-salvar').disabled=true;
+  let ok=0, err=0;
+  for(const s of sels){
+    const {error}=await sb.from('matriculas_ano').update({horario:s.value||null}).eq('id',+s.dataset.id);
+    if(error) err++; else ok++;
+  }
+  $('hh-salvar').disabled=false;
+  msg.className= err?'msg err':'msg ok';
+  msg.textContent=`Salvos ${ok}.${err?(' Erros: '+err+'.'):''}`;
+}
 function cadTab(w){
-  ['ind','massa','lote'].forEach(k=>$('t-'+k).classList.toggle('on',k===w));
+  ['ind','massa','lote','hor'].forEach(k=>$('t-'+k).classList.toggle('on',k===w));
   $('p-ind').classList.toggle('hide',w!=='ind');
   $('p-massa').classList.toggle('hide',w!=='massa');
   $('p-lote').classList.toggle('hide',w!=='lote');
   $('p-lote2').classList.toggle('hide',w!=='lote');
+  $('p-hor').classList.toggle('hide',w!=='hor');
 }
 
 // ==================================================================
@@ -2684,6 +2758,8 @@ document.querySelectorAll('#ea-sit button').forEach(b=>b.onclick=()=>setSit(b.da
 $('ea-turma').onchange=()=>{ if(alunoEdit) $('ea-turma-aviso').classList.toggle('hide', $('ea-turma').value===alunoEdit.turma); };
 $('ea-cancel').onclick=()=>$('ov-aluno').classList.add('hide');
 $('ea-salvar').onclick=salvarEditarAluno;
+$('t-hor').onclick=()=>cadTab('hor'); $('hh-gerar').onclick=montarHorariosLista; $('hh-salvar').onclick=salvarHorarios;
+$('hh-turma').onchange=()=>$('hh-wrap').classList.add('hide'); $('hh-grupo').onchange=()=>$('hh-wrap').classList.add('hide');
 $('ov-aluno').addEventListener('click',e=>{if(e.target===$('ov-aluno'))$('ov-aluno').classList.add('hide');});
 
 $('er-cancel').onclick=()=>$('ov-red').classList.add('hide');
