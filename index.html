@@ -99,7 +99,7 @@
   .item .m{font-weight:600;font-family:ui-monospace,monospace;font-size:14px}
   .item .sub{font-size:12px;color:var(--muted)}
   .item .st{font-size:11px;padding:2px 8px;border-radius:12px;white-space:nowrap}
-  .st.ativo,.st.corrigida{background:var(--ok-soft);color:var(--brand2-ink)}
+  .st.ativo,.st.corrigida,.st.pres{background:var(--ok-soft);color:var(--brand2-ink)}
   .st.inativo,.st.falta{background:var(--danger-soft);color:var(--danger)}
   .st.justif{background:var(--warn-soft);color:var(--warn)}
   .st.pend{background:var(--line);color:var(--muted)}
@@ -1297,7 +1297,8 @@ async function listarParaLancar(){
   (alunos||[]).forEach(a=>{
     const l=porMat[a.matricula]; let st='<span class="st pend">Pendente</span>';
     if(l){
-      if(l.frequencia==='falta') st='<span class="st falta">Falta</span>';
+      if(l.frequencia==='presente') st='<span class="st pres">Presente</span>';
+      else if(l.frequencia==='falta') st='<span class="st falta">Falta</span>';
       else if(l.frequencia==='falta_justificada') st='<span class="st justif">Falta just.</span>';
       if(redAtual.banca==='Atividade'){ if(l.avaliacao) st+=` <span class="st corrigida">${avalLabel(l.avaliacao)}</span>`; }
       else if(l.nota_final!=null) st+=` <span class="st corrigida">Nota ${(+l.nota_final).toFixed(2).replace('.',',')}</span>`;
