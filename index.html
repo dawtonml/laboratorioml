@@ -196,6 +196,11 @@
   .fc-fj{color:var(--warn);font-weight:600}
   #cons-subs button{font-size:13px}
   #cons-subs{margin-top:-6px}
+  .prog{height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:7px;max-width:240px}
+  .prog-fill{height:100%;background:var(--accent);transition:width .3s}
+  .prog-fill.ok{background:var(--brand2)}
+  .prog-tit{font-size:11px;color:var(--muted);margin-top:3px}
+  .prog-tit .f{color:var(--danger);font-weight:600}
 </style>
 </head>
 <body>
@@ -1241,16 +1246,30 @@ async function montarHoje(){
   if(!reds.length){ $('hoje-count').textContent='sem correções hoje'; lista.innerHTML='<div class="hint" style="margin:0">Nenhuma redação programada para correção hoje.</div>'; return; }
   $('hoje-count').textContent=`${reds.length} ${reds.length===1?'redação':'redações'} para hoje`;
   reds.sort((a,b)=> (a.turma<b.turma?-1:a.turma>b.turma?1:0));
+  const ids=reds.map(r=>r.id);
+  const anos=[...new Set(reds.map(r=>r.ano))], turmas=[...new Set(reds.map(r=>r.turma))];
+  const {data:mats}=await sb.from('matriculas_ano').select('matricula,ano,turma,grupo').in('ano',anos).in('turma',turmas).eq('ativo',true);
+  const {data:lancs}=await sb.from('lancamentos').select('redacao_id,matricula,frequencia').in('redacao_id',ids);
   reds.forEach(r=>{
     const g1=r.data_g1===hoje, g2=r.data_g2===hoje;
-    let gtxt='', grupo=null;
-    if(g1&&g2){ gtxt='Grupos 1 e 2'; }
-    else if(g1){ gtxt='Grupo 1'; grupo=1; }
-    else if(g2){ gtxt='Grupo 2'; grupo=2; }
-    else { gtxt='Correção hoje'; }
+    let gtxt='', grupo=null, grupos;
+    if(g1&&g2){ gtxt='Grupos 1 e 2'; grupos=[1,2]; }
+    else if(g1){ gtxt='Grupo 1'; grupo=1; grupos=[1]; }
+    else if(g2){ gtxt='Grupo 2'; grupo=2; grupos=[2]; }
+    else { gtxt='Correção hoje'; grupos=[1,2]; }
+    const matSet=new Set((mats||[]).filter(m=>m.ano===r.ano && m.turma===r.turma && grupos.includes(m.grupo)).map(m=>m.matricula));
+    const lr=(lancs||[]).filter(l=>l.redacao_id===r.id && matSet.has(l.matricula));
+    const total=matSet.size;
+    const feitos=new Set(lr.map(l=>l.matricula)).size;
+    const faltas=lr.filter(l=>l.frequencia==='falta'||l.frequencia==='falta_justificada').length;
+    const pct= total? Math.round(feitos/total*100):0;
     const el=document.createElement('div'); el.className='item clic';
-    el.innerHTML=`<div class="info"><div class="m">${esc(r.rotulo)} · ${esc(TURMA_NOME[r.turma]||r.turma)}</div>
-      <div class="sub">${r.banca} · ${gtxt}${r.etapa?' · '+r.etapa+'ª etapa':''}</div></div>
+    el.innerHTML=`<div class="info" style="flex:1">
+      <div class="m">${esc(r.rotulo)} · ${esc(TURMA_NOME[r.turma]||r.turma)}</div>
+      <div class="sub">${r.banca} · ${gtxt}${r.etapa?' · '+r.etapa+'ª etapa':''}</div>
+      <div class="prog"><div class="prog-fill ${pct>=100?'ok':''}" style="width:${pct}%"></div></div>
+      <div class="prog-tit">${feitos}/${total} lançados${total?` · ${pct}%`:''}${faltas?` · <span class="f">${faltas} falta${faltas>1?'s':''}</span>`:''}${(total&&feitos>=total)?' · concluída':''}</div>
+      </div>
       <div><span class="st corrigida">abrir</span></div>`;
     el.onclick=()=>irParaRedacaoHoje(r,grupo);
     lista.appendChild(el);
@@ -1453,7 +1472,7 @@ async function salvarLancamento(){
   const {error}=await sb.from('lancamentos').upsert(payload,{onConflict:'redacao_id,matricula'});
   $('md-salvar').disabled=false;
   if(error){msg.textContent='Erro ao salvar: '+error.message;return;}
-  $('overlay').classList.add('hide'); listarParaLancar();
+  $('overlay').classList.add('hide'); listarParaLancar(); if(!$('lp-manual').classList.contains('hide')) montarHoje();
 }
 
 // ---------- IMPORTAR ENEM (planilha) ----------
