@@ -969,6 +969,11 @@ async function sair(){ await sb.auth.signOut(); $('app').classList.add('hide'); 
 
 // ---------- REFERÊNCIAS ----------
 let LAB={};
+let NOMES={};
+function nomeDe(m){ return NOMES[m]||''; }
+function matNome(m){ const n=NOMES[m]; return n? esc(m)+' · '+esc(n) : esc(m); }
+function nomeCurto(n){ if(!n) return ''; return String(n).trim().split(/\s+/).slice(0,3).join(' '); }
+function matNomeCurto(m){ const n=NOMES[m]; return n? esc(m)+' · '+esc(nomeCurto(n)) : esc(m); }
 const DIAS_SEMANA=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
 function proximoDiaSemana(dia){
   const d=new Date(); d.setHours(0,0,0,0);
@@ -1006,6 +1011,7 @@ async function carregarRefs(){
   $('l-turma').innerHTML='<option value="">Selecione a turma…</option>'+optT;
   $('rl-turma').innerHTML='<option value="">Selecione a turma…</option>'+optT;
   try{ const {data:ld}=await sb.from('laboratorio_dias').select('*'); LAB={}; (ld||[]).forEach(x=>LAB[x.ano+'|'+x.serie]={dia:x.dia}); }catch(e){ LAB={}; }
+  try{ const {data:nm}=await sb.from('matriculas_ano').select('matricula,nome'); NOMES={}; (nm||[]).forEach(x=>{ if(x.nome) NOMES[x.matricula]=x.nome; }); }catch(e){ NOMES={}; }
   $('r-data-g1').value=hojeISO(); $('r-data-g2').value=hojeISO();
   atualizarRotulos(); prefillDatasRedacao(); togglePenRow();
 }
@@ -1107,7 +1113,7 @@ async function listarAlunos(){
   data.forEach(a=>{
     const d=document.createElement('div'); d.className='item clic';
     d.innerHTML=`<div class="av">${a.matricula.slice(-3)}</div>
-      <div class="info"><div class="m">${a.matricula}</div>
+      <div class="info"><div class="m">${matNomeCurto(a.matricula)}</div>
       <div class="sub">${TURMA_NOME[a.turma]||a.turma} · Grupo ${a.grupo} · ${(a.horario||'').slice(0,5)}</div></div>
       <span class="st ${a.ativo?'ativo':'inativo'}">${a.ativo?'Ativo':'Saiu'}</span>`;
     d.onclick=()=>abrirEditarAluno(a);
@@ -1341,7 +1347,7 @@ async function listarParaLancar(){
     }
     const d=document.createElement('div'); d.className='item clic';
     d.innerHTML=`<div class="av">${a.matricula.slice(-3)}</div>
-      <div class="info"><div class="m">${a.matricula}${a.nome?' · '+esc(a.nome):''}</div>
+      <div class="info"><div class="m">${matNomeCurto(a.matricula)}</div>
       <div class="sub">Grupo ${a.grupo} · ${(a.horario||'').slice(0,5)}</div></div>
       <div style="text-align:right">${st}</div>`;
     d.onclick=()=>abrirModal(a);
@@ -1352,7 +1358,7 @@ async function listarParaLancar(){
 // ---------- MODAL ----------
 async function abrirModal(a){
   alunoAtual=a.matricula;
-  $('md-mat').textContent=a.matricula+(a.nome?' · '+a.nome:'');
+  $('md-mat').textContent = NOMES[a.matricula] ? (a.matricula+' · '+nomeCurto(NOMES[a.matricula])) : a.matricula;
   const ehAtiv=redAtual.banca==='Atividade';
   $('md-who').textContent=`${TURMA_NOME[redAtual.turma]} · Grupo ${a.grupo} · ${redAtual.rotulo} · ${redAtual.banca}`;
   $('md-nota-block').classList.toggle('hide',ehAtiv);
@@ -1796,7 +1802,7 @@ function consGrupo(g){
 async function consCarregarAlunos(){
   const ano=+$('k-ano').value, turma=$('k-turma').value;
   const {data}=await sb.from('matriculas_ano').select('matricula,grupo,horario,ativo').eq('ano',ano).eq('turma',turma).order('horario');
-  $('k-aluno').innerHTML='<option value="">Selecione o aluno…</option>'+(data||[]).map(a=>`<option value="${a.matricula}">${a.matricula} · Grupo ${a.grupo}${a.ativo?'':' · saiu'}</option>`).join('');
+  $('k-aluno').innerHTML='<option value="">Selecione o aluno…</option>'+(data||[]).map(a=>`<option value="${a.matricula}">${matNomeCurto(a.matricula)} · Grupo ${a.grupo}${a.ativo?'':' · saiu'}</option>`).join('');
   $('k-res').classList.add('hide'); $('k-empty').classList.remove('hide');
 }
 async function consAluno(){
@@ -1923,7 +1929,7 @@ async function consRedacao(){
   let html=`<thead><tr><th>Matrícula</th><th>Grupo</th><th>Horário</th><th>Frequência</th><th class="num">Nota</th><th>Detalhe</th></tr></thead><tbody>`;
   rows.forEach(({a,l,nota})=>{
     html+=`<tr>
-      <td class="mono">${a.matricula}</td>
+      <td class="mono">${matNome(a.matricula)}</td>
       <td>${a.grupo}</td>
       <td>${(a.horario||'').slice(0,5)}</td>
       <td>${freqLabel(l)}</td>
@@ -1972,7 +1978,7 @@ async function consBoletim(){
     if(med!=null){ geralSoma+=med; geralCnt++; }
     csvRow.push(med==null?'':fmtN(med));
     csv.push(csvRow);
-    body+=`<tr><td class="stick mono">${a.matricula}</td>${tds}<td class="med">${fmtN(med)}</td></tr>`;
+    body+=`<tr><td class="stick mono">${matNome(a.matricula)}</td>${tds}<td class="med">${fmtN(med)}</td></tr>`;
   });
   body+='</tbody>';
 
@@ -2031,7 +2037,7 @@ async function listarHorarios(){
     const porH={}; alunos.forEach(a=>{ const h=(a.horario||'').slice(0,5)||'—'; (porH[h]=porH[h]||[]).push(a.matricula); });
     const horas=Object.keys(porH).sort();
     let linhas='';
-    horas.forEach(h=>{ linhas+=`<tr><td class="mono">${h}</td><td>${porH[h].map(m=>`<span class="mono">${m}</span>`).join(', ')}</td><td class="num">${porH[h].length}</td></tr>`; });
+    horas.forEach(h=>{ linhas+=`<tr><td class="mono">${h}</td><td>${porH[h].map(m=>`<span class="mono">${matNomeCurto(m)}</span>`).join(', ')}</td><td class="num">${porH[h].length}</td></tr>`; });
     const dd=dias[g]||[];
     const diasLinha = dd.length ? `<p class="sub-note" style="margin:0 0 10px"><strong>Dias de laboratório:</strong> ${dd.map(calDia).join(' · ')}</p>` : '<p class="sub-note" style="margin:0 0 10px">Sem datas cadastradas para este grupo neste filtro.</p>';
     const panel=document.createElement('div'); panel.className='panel';
@@ -2053,12 +2059,12 @@ async function imprimirRoster(comDias){
     const dd = comDias ? (dias[g]||[]) : [];
     if(comDias && dd.length){
       corpo+='<table class="folha"><thead><tr><th>Matrícula</th><th>Horário</th>'+dd.map(d=>`<th>${calDia(d)}</th>`).join('')+'</tr></thead><tbody>';
-      al.forEach(a=>{ corpo+=`<tr><td class="mono">${a.matricula}</td><td>${(a.horario||'').slice(0,5)}</td>${dd.map(()=>'<td></td>').join('')}</tr>`; });
+      al.forEach(a=>{ corpo+=`<tr><td class="mono">${matNome(a.matricula)}</td><td>${(a.horario||'').slice(0,5)}</td>${dd.map(()=>'<td></td>').join('')}</tr>`; });
       corpo+='</tbody></table>';
     } else {
       if(comDias) corpo+='<p class="sub-note">Sem datas cadastradas para este grupo neste filtro.</p>';
       corpo+='<table class="folha"><thead><tr><th>Matrícula</th><th>Horário</th></tr></thead><tbody>';
-      al.forEach(a=>{ corpo+=`<tr><td class="mono">${a.matricula}</td><td>${(a.horario||'').slice(0,5)}</td></tr>`; });
+      al.forEach(a=>{ corpo+=`<tr><td class="mono">${matNome(a.matricula)}</td><td>${(a.horario||'').slice(0,5)}</td></tr>`; });
       corpo+='</tbody></table>';
     }
     corpo+='</div>';
@@ -2158,7 +2164,7 @@ async function montarHorariosLista(){
     const atual=(a.horario||'').slice(0,5);
     const extra=(atual && !hhFaixas.includes(atual)) ? `<option value="${atual}">${atual} (fora da faixa)</option>` : '';
     const opts='<option value="">—</option>'+extra+hhFaixas.map(f=>`<option value="${f}">${f}</option>`).join('');
-    h+=`<tr><td class="mono">${a.matricula}</td><td><select class="hh-sel" data-id="${a.id}">${opts}</select></td></tr>`;
+    h+=`<tr><td class="mono">${matNome(a.matricula)}</td><td><select class="hh-sel" data-id="${a.id}">${opts}</select></td></tr>`;
   });
   h+='</tbody>'; $('hh-tbl').innerHTML=h;
   const sels=[...$('hh-tbl').querySelectorAll('.hh-sel')];
@@ -2413,7 +2419,7 @@ async function consPendencias(){
       <td>${r.etapa?r.etapa+'ª':'—'}</td>
       <td class="num">${done}/${totalAtivos}</td>
       <td class="num">${faltam.length? '<span class="pill f-lo">'+faltam.length+'</span>' : '<span class="pill f-ok">0</span>'}</td>
-      <td class="det">${faltam.length? faltam.map(m=>'<span class="mono">'+m+'</span>').join(', ') : 'concluída'}</td>
+      <td class="det">${faltam.length? faltam.map(m=>'<span class="mono">'+matNome(m)+'</span>').join(', ') : 'concluída'}</td>
     </tr>`;
   });
   h+='</tbody>'; $('pd-tbl').innerHTML=h;
@@ -2626,7 +2632,7 @@ async function consFrequencia(){
   $('fq-sub').innerHTML=`Grupo ${grupo}${dataGrupo?(' · '+dataBR(dataGrupo)):''} · <span class="red-chip">${r.banca}</span>`;
   $('fq-faltas').innerHTML = faltas.length ? `<strong>Faltaram (${faltas.length}):</strong> ${faltas.map(f=>f.mat).join(', ')}` : 'Nenhuma falta registrada neste grupo.';
   let h='<thead><tr><th>Matrícula</th><th>Horário</th><th>Frequência</th>'+(ehAtiv?'<th>Avaliação</th>':'')+'</tr></thead><tbody>';
-  rows.forEach(x=>{ h+=`<tr><td class="mono">${x.mat}</td><td>${x.hora}</td><td>${freqRotulo(x.freq)}</td>${ehAtiv?('<td>'+(x.aval?avalLabel(x.aval):'—')+'</td>'):''}</tr>`; });
+  rows.forEach(x=>{ h+=`<tr><td class="mono">${matNome(x.mat)}</td><td>${x.hora}</td><td>${freqRotulo(x.freq)}</td>${ehAtiv?('<td>'+(x.aval?avalLabel(x.aval):'—')+'</td>'):''}</tr>`; });
   h+='</tbody>'; $('fq-tbl').innerHTML=h;
   $('fq-empty').classList.add('hide'); $('fq-res').classList.remove('hide');
 }
@@ -2635,7 +2641,7 @@ function imprimirFrequencia(){
   const {r,grupo,dataGrupo,rows,faltas}=fqAtual; const ehAtiv=r.banca==='Atividade';
   let corpo = `<p class="sub-note"><strong>Faltaram (${faltas.length}):</strong> ${faltas.length? faltas.map(f=>f.mat).join(', ') : 'ninguém'}</p>`;
   corpo += '<table class="folha"><thead><tr><th>Matrícula</th><th>Horário</th><th>Frequência</th>'+(ehAtiv?'<th>Avaliação</th>':'')+'</tr></thead><tbody>';
-  rows.forEach(x=>{ corpo+=`<tr><td class="mono">${x.mat}</td><td>${x.hora}</td><td>${freqTexto(x.freq)}</td>${ehAtiv?('<td>'+(x.aval?avalLabel(x.aval):'—')+'</td>'):''}</tr>`; });
+  rows.forEach(x=>{ corpo+=`<tr><td class="mono">${matNome(x.mat)}</td><td>${x.hora}</td><td>${freqTexto(x.freq)}</td>${ehAtiv?('<td>'+(x.aval?avalLabel(x.aval):'—')+'</td>'):''}</tr>`; });
   corpo+='</tbody></table>';
   abrirImpressao(ehAtiv?'Frequência e avaliação da atividade':'Frequência de correção', `${r.rotulo} · ${TURMA_NOME[r.turma]||r.turma} · Grupo ${grupo}${dataGrupo?(' · '+dataBR(dataGrupo)):''}`, corpo);
 }
@@ -2650,7 +2656,7 @@ async function imprimirFolhaNotas(){
     const al=data.filter(a=>a.grupo===g); if(!al.length) return;
     corpo+=`<div class="sec"><h3>${esc(TURMA_NOME[turma]||turma)} · Grupo ${g}</h3>`;
     corpo+='<table class="folha"><thead><tr><th>Matrícula</th><th>Horário</th><th style="width:110px">Nota</th><th>Observações</th></tr></thead><tbody>';
-    al.forEach(a=>{ corpo+=`<tr><td class="mono">${a.matricula}</td><td>${(a.horario||'').slice(0,5)}</td><td></td><td></td></tr>`; });
+    al.forEach(a=>{ corpo+=`<tr><td class="mono">${matNome(a.matricula)}</td><td>${(a.horario||'').slice(0,5)}</td><td></td><td></td></tr>`; });
     for(let i=0;i<3;i++) corpo+='<tr><td></td><td></td><td></td><td></td></tr>';
     corpo+='</tbody></table></div>';
   });
@@ -2680,7 +2686,7 @@ async function consFreqEtapa(){
       tds+=`<td class="${freqCls(f)}">${freqCod(f)||'·'}</td>`;
       if(f){ totalLanc++; if(f==='presente')totalPres++; else { faltas++; colFaltas[j]++; totalFaltas++; } }
     });
-    body+=`<tr><td class="stick mono">${a.matricula}</td>${tds}<td class="med">${faltas||''}</td></tr>`;
+    body+=`<tr><td class="stick mono">${matNome(a.matricula)}</td>${tds}<td class="med">${faltas||''}</td></tr>`;
   });
   body+='</tbody>';
   let foot='<tfoot><tr><td class="stick">Faltas na turma</td>'+colFaltas.map(c=>`<td>${c||''}</td>`).join('')+`<td class="med">${totalFaltas||''}</td></tr></tfoot>`;
@@ -2704,7 +2710,7 @@ function imprimirFreqEtapa(){
   let corpo='<table class="folha"><thead><tr><th>Matrícula</th>'+reds.map(r=>`<th>${esc(r.rotulo)}</th>`).join('')+'<th>Faltas</th></tr></thead><tbody>';
   alunos.forEach(a=>{ let faltas=0, tds='';
     reds.forEach(r=>{ const f=cel[a.matricula+'|'+r.id]||null; tds+=`<td>${freqCod(f)||''}</td>`; if(f&&f!=='presente')faltas++; });
-    corpo+=`<tr><td class="mono">${a.matricula}</td>${tds}<td>${faltas||''}</td></tr>`;
+    corpo+=`<tr><td class="mono">${matNome(a.matricula)}</td>${tds}<td>${faltas||''}</td></tr>`;
   });
   corpo+='</tbody></table>';
   abrirImpressao('Frequência da etapa', `${TURMA_NOME[turma]||turma} · ${etapa}ª etapa · ${ano}`, corpo);
@@ -2757,7 +2763,7 @@ async function imprimirCartoes(){
         <div class="card-mat">${esc(a.matricula)}</div>
         <div class="card-info">${esc(TURMA_NOME[turma]||turma)} · Grupo ${a.grupo}</div>
         <div class="card-info">Atendimento: ${(a.horario||'').slice(0,5)}</div>
-        <div class="card-nome">Nome: __________________________</div>
+        <div class="card-nome">${nomeDe(a.matricula)? 'Nome: '+esc(nomeDe(a.matricula)) : 'Nome: __________________________'}</div>
       </div>
     </div>`).join('');
   abrirImpressao('Cartões de identificação', `${esc(TURMA_NOME[turma]||turma)} · ${ano} · ${data.length} alunos`, `<div class="cards">${cards}</div>`);
