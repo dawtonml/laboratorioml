@@ -246,6 +246,7 @@
         <button id="t-massa">Importar planilha</button>
         <button id="t-lote" class="hide">Turma em lote</button>
         <button id="t-hor">Horários da turma</button>
+        <button id="t-nomes">Nomes</button>
       </div>
       <div class="panel" id="p-ind">
         <div class="field"><label for="c-mat">Matrícula do aluno</label>
@@ -332,6 +333,22 @@
           <div class="sub-note" id="hh-resumo" style="margin:10px 0"></div>
           <div style="overflow-x:auto"><table class="tbl" id="hh-tbl"></table></div>
           <div class="row-actions" style="margin-top:10px"><button class="primary" id="hh-salvar">Salvar horários</button><span class="msg" id="hh-salvar-msg"></span></div>
+        </div>
+      </div>
+      <div class="panel hide" id="p-nomes">
+        <h3>Nomes dos alunos</h3>
+        <p class="hint">Cole ou envie uma planilha com matrícula e nome, um por linha. O sistema associa o nome à matrícula em todos os anos. A matrícula continua sendo a chave; o nome é só exibição.</p>
+        <div class="field"><label for="nm-txt">Matrícula e nome (um por linha, separados por tab, ponto e vírgula ou vírgula)</label>
+          <textarea id="nm-txt" rows="6" placeholder="20240130; João da Silva&#10;20240096; Maria Souza"></textarea></div>
+        <div class="row-actions">
+          <button id="nm-file-btn">Enviar planilha (CSV/XLSX)</button><input id="nm-file" type="file" accept=".csv,.xlsx,.xls" style="display:none">
+          <button id="nm-prever">Pré-visualizar</button>
+          <span class="msg" id="nm-msg"></span>
+        </div>
+        <div id="nm-prev" class="hide">
+          <div class="metrics" id="nm-metrics"></div>
+          <div style="overflow-x:auto"><table class="tbl" id="nm-tbl"></table></div>
+          <div class="row-actions" style="margin-top:10px"><button class="primary" id="nm-aplicar">Atualizar nomes</button><span class="msg" id="nm-aplicar-msg"></span></div>
         </div>
       </div>
       <div class="list-head"><h3>Alunos cadastrados</h3><span class="hint" id="l-count"></span></div>
@@ -1306,7 +1323,7 @@ async function abrirRedacao(){
 }
 async function listarParaLancar(){
   const grupo=$('x-grupo').value;
-  let q=sb.from('matriculas_ano').select('matricula,grupo,horario').eq('ano',redAtual.ano).eq('turma',redAtual.turma).eq('ativo',true).order('horario');
+  let q=sb.from('matriculas_ano').select('matricula,grupo,horario,nome').eq('ano',redAtual.ano).eq('turma',redAtual.turma).eq('ativo',true).order('horario');
   if(grupo)q=q.eq('grupo',+grupo);
   const {data:alunos}=await q;
   const {data:lancs}=await sb.from('lancamentos').select('matricula,frequencia,nota_final,zero_direto,avaliacao').eq('redacao_id',redAtual.id);
@@ -1324,7 +1341,7 @@ async function listarParaLancar(){
     }
     const d=document.createElement('div'); d.className='item clic';
     d.innerHTML=`<div class="av">${a.matricula.slice(-3)}</div>
-      <div class="info"><div class="m">${a.matricula}</div>
+      <div class="info"><div class="m">${a.matricula}${a.nome?' · '+esc(a.nome):''}</div>
       <div class="sub">Grupo ${a.grupo} · ${(a.horario||'').slice(0,5)}</div></div>
       <div style="text-align:right">${st}</div>`;
     d.onclick=()=>abrirModal(a);
@@ -1335,7 +1352,7 @@ async function listarParaLancar(){
 // ---------- MODAL ----------
 async function abrirModal(a){
   alunoAtual=a.matricula;
-  $('md-mat').textContent=a.matricula;
+  $('md-mat').textContent=a.matricula+(a.nome?' · '+a.nome:'');
   const ehAtiv=redAtual.banca==='Atividade';
   $('md-who').textContent=`${TURMA_NOME[redAtual.turma]} · Grupo ${a.grupo} · ${redAtual.rotulo} · ${redAtual.banca}`;
   $('md-nota-block').classList.toggle('hide',ehAtiv);
@@ -2171,13 +2188,68 @@ async function salvarHorarios(){
   msg.className= err?'msg err':'msg ok';
   msg.textContent=`Salvos ${ok}.${err?(' Erros: '+err+'.'):''}`;
 }
+let nomesValidos=[];
+async function importNomesArquivo(ev){
+  const f=ev.target.files&&ev.target.files[0]; if(!f) return;
+  const msg=$('nm-msg'); msg.className='msg'; msg.textContent='Lendo arquivo…';
+  const fn=f.name.toLowerCase();
+  try{
+    if(fn.endsWith('.xlsx')||fn.endsWith('.xls')){
+      await carregarSheetJS();
+      const buf=await f.arrayBuffer(); const wb=XLSX.read(buf,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const linhas=XLSX.utils.sheet_to_json(ws,{header:1,blankrows:false});
+      $('nm-txt').value=linhas.map(r=>(r||[]).slice(0,2).join('\t')).join('\n');
+    } else { $('nm-txt').value=await f.text(); }
+    msg.textContent=''; preverNomes();
+  }catch(e){ msg.className='msg err'; msg.textContent=String(e.message||e); }
+  ev.target.value='';
+}
+function parseNomeLinha(ln){
+  const m=ln.match(/^\s*(\d{3,})\s*[\t;,]\s*(.+?)\s*$/);
+  return m ? {mat:m[1], nome:m[2].trim()} : null;
+}
+async function preverNomes(){
+  const msg=$('nm-msg'); msg.className='msg'; msg.textContent='';
+  const {data:mats}=await sb.from('matriculas_ano').select('matricula');
+  const matSet=new Set((mats||[]).map(m=>m.matricula));
+  const linhas=$('nm-txt').value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  const rows=[];
+  linhas.forEach(ln=>{ const pp=parseNomeLinha(ln); if(pp) rows.push({mat:pp.mat, nome:pp.nome, existe:matSet.has(pp.mat)}); });
+  if(!rows.length){ msg.className='msg err'; msg.textContent='Nenhuma linha válida. Use: matrícula, nome (um por linha).'; $('nm-prev').classList.add('hide'); return; }
+  nomesValidos=rows.filter(r=>r.existe && r.nome);
+  const naoAch=rows.filter(r=>!r.existe).length;
+  $('nm-metrics').innerHTML=metricsHTML([
+    {n:rows.length,l:'Linhas lidas'},
+    {n:nomesValidos.length,l:'Prontas para atualizar',color:'var(--brand2)'},
+    {n:naoAch,l:'Matrícula não encontrada',color:naoAch?'var(--danger)':null}
+  ]);
+  let h='<thead><tr><th>Matrícula</th><th>Nome</th><th>Situação</th></tr></thead><tbody>';
+  rows.forEach(r=>{ h+=`<tr><td class="mono">${esc(r.mat)}</td><td>${esc(r.nome)}</td><td>${r.existe?'<span class="st corrigida">encontrada</span>':'<span class="st falta">não encontrada</span>'}</td></tr>`; });
+  h+='</tbody>'; $('nm-tbl').innerHTML=h;
+  $('nm-prev').classList.remove('hide');
+}
+async function aplicarNomes(){
+  const msg=$('nm-aplicar-msg'); msg.className='msg';
+  if(!nomesValidos.length){ msg.className='msg err'; msg.textContent='Nada para atualizar.'; return; }
+  $('nm-aplicar').disabled=true; msg.textContent='Atualizando…';
+  let ok=0, err=0;
+  for(const r of nomesValidos){
+    const {error}=await sb.from('matriculas_ano').update({nome:r.nome}).eq('matricula',r.mat);
+    if(error) err++; else ok++;
+  }
+  $('nm-aplicar').disabled=false;
+  msg.className= err?'msg err':'msg ok';
+  msg.textContent=`Nomes atualizados: ${ok}.${err?(' Erros: '+err+'.'):''}`;
+}
 function cadTab(w){
-  ['ind','massa','lote','hor'].forEach(k=>$('t-'+k).classList.toggle('on',k===w));
+  ['ind','massa','lote','hor','nomes'].forEach(k=>$('t-'+k).classList.toggle('on',k===w));
   $('p-ind').classList.toggle('hide',w!=='ind');
   $('p-massa').classList.toggle('hide',w!=='massa');
   $('p-lote').classList.toggle('hide',w!=='lote');
   $('p-lote2').classList.toggle('hide',w!=='lote');
   $('p-hor').classList.toggle('hide',w!=='hor');
+  $('p-nomes').classList.toggle('hide',w!=='nomes');
 }
 
 // ==================================================================
@@ -2779,6 +2851,7 @@ $('ea-turma').onchange=()=>{ if(alunoEdit) $('ea-turma-aviso').classList.toggle(
 $('ea-cancel').onclick=()=>$('ov-aluno').classList.add('hide');
 $('ea-salvar').onclick=salvarEditarAluno;
 $('t-hor').onclick=()=>cadTab('hor'); $('hh-gerar').onclick=montarHorariosLista; $('hh-salvar').onclick=salvarHorarios;
+$('t-nomes').onclick=()=>cadTab('nomes'); $('nm-prever').onclick=preverNomes; $('nm-aplicar').onclick=aplicarNomes; $('nm-file-btn').onclick=()=>$('nm-file').click(); $('nm-file').onchange=importNomesArquivo;
 $('hh-turma').onchange=()=>$('hh-wrap').classList.add('hide'); $('hh-grupo').onchange=()=>$('hh-wrap').classList.add('hide');
 $('ov-aluno').addEventListener('click',e=>{if(e.target===$('ov-aluno'))$('ov-aluno').classList.add('hide');});
 
