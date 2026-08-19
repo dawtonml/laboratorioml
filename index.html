@@ -811,6 +811,8 @@
   <div class="modal">
     <h3 id="md-mat"></h3>
     <div class="who" id="md-who"></div>
+    <div class="hint hide" id="md-hist" style="margin-top:6px"></div>
+    <div class="hint" id="md-autostatus" style="margin-top:4px;min-height:14px"></div>
 
     <div class="block">
       <label>Frequência</label>
@@ -1356,6 +1358,35 @@ async function listarParaLancar(){
 }
 
 // ---------- MODAL ----------
+function setSaveStatus(txt,kind){
+  const el=$('md-autostatus'); if(!el) return;
+  el.textContent=txt;
+  el.style.color = kind==='ok' ? 'var(--brand2-ink)' : kind==='err' ? 'var(--danger)' : 'var(--muted)';
+}
+async function montarHistEnem(matricula){
+  const el=$('md-hist');
+  if(!redAtual || redAtual.banca!=='ENEM'){ el.classList.add('hide'); el.textContent=''; return; }
+  const {data:redsAnt}=await sb.from('redacoes').select('id,rotulo,data').eq('ano',redAtual.ano).eq('turma',redAtual.turma).eq('banca','ENEM').neq('id',redAtual.id).order('data');
+  const ids=(redsAnt||[]).map(r=>r.id);
+  if(!ids.length){ el.classList.add('hide'); el.textContent=''; return; }
+  const {data:lancs}=await sb.from('lancamentos').select('redacao_id,enem_c1,enem_c2,enem_c3,enem_c4,enem_c5').eq('matricula',matricula).in('redacao_id',ids);
+  const redById={}; (redsAnt||[]).forEach(r=>redById[r.id]=r);
+  const pontos=(lancs||[]).filter(l=>l.enem_c1!=null && redById[l.redacao_id])
+    .map(l=>({red:redById[l.redacao_id], l}))
+    .sort((a,b)=> (a.red.data<b.red.data?-1:a.red.data>b.red.data?1:0));
+  const ult=pontos.slice(-2);
+  if(!ult.length){ el.classList.add('hide'); el.textContent=''; return; }
+  let txt;
+  if(ult.length===1){
+    const {red,l}=ult[0];
+    txt=`Última correção (${esc(red.rotulo)}): ${[1,2,3,4,5].map(i=>`C${i} ${l['enem_c'+i]}`).join(' · ')}`;
+  } else {
+    const [a1,a2]=ult;
+    txt=`Comparando com as duas últimas (${esc(a1.red.rotulo)} → ${esc(a2.red.rotulo)}): `+
+      [1,2,3,4,5].map(i=>`C${i} ${a1.l['enem_c'+i]}→${a2.l['enem_c'+i]}`).join(' · ');
+  }
+  el.textContent=txt; el.classList.remove('hide');
+}
 async function abrirModal(a){
   alunoAtual=a.matricula;
   $('md-mat').textContent = NOMES[a.matricula] ? (a.matricula+' · '+nomeCurto(NOMES[a.matricula])) : a.matricula;
@@ -1378,7 +1409,8 @@ async function abrirModal(a){
   const temPen=redAtual.tipo==='comum'&&redAtual.banca!=='Atividade'&&redAtual.penalidade>0;
   $('md-penal').classList.toggle('hide',!temPen);
   if(temPen)$('md-penal').textContent=`Penalidade da turma nesta redação: −${fmtN1(redAtual.penalidade)}${redAtual.penalidade_motivo?' ('+redAtual.penalidade_motivo+')':''}. A nota final no boletim já considera esse desconto.`;
-  $('md-msg').textContent='';
+  $('md-msg').textContent=''; setSaveStatus('','muted');
+  await montarHistEnem(a.matricula);
   aplicarRegras(); recalcular();
   $('overlay').classList.remove('hide');
 }
@@ -1400,7 +1432,7 @@ function montarCriterios(data){
     if(data)[1,2,3,4,5].forEach(i=>{ if(data['enem_c'+i]!=null){ const bt=box.querySelector(`.crit-btn[data-c="${i}"][data-v="${data['enem_c'+i]}"]`); if(bt)bt.classList.add('on'); } });
     box.querySelectorAll('.crit-btn').forEach(btn=>btn.onclick=()=>{
       box.querySelectorAll(`.crit-btn[data-c="${btn.dataset.c}"]`).forEach(x=>x.classList.remove('on'));
-      btn.classList.add('on'); recalcular();
+      btn.classList.add('on'); recalcular(); agendarAutosave();
     });
   } else if(b==='UECE'){
     box.innerHTML=`<div class="grid2">
@@ -1413,7 +1445,7 @@ function montarCriterios(data){
     box.innerHTML=`<div><label for="un-e">Quantidade de erros (cada par −10 de 200)</label>
       <input id="un-e" class="crit" type="number" min="0" value="${data&&data.unifor_erros!=null?data.unifor_erros:0}"></div>`;
   }
-  box.querySelectorAll('.crit').forEach(el=>el.addEventListener('input',recalcular));
+  box.querySelectorAll('.crit').forEach(el=>el.addEventListener('input',()=>{recalcular();agendarAutosave();}));
 }
 function montarAvaliacao(data){
   const box=$('md-aval');
@@ -1423,6 +1455,7 @@ function montarAvaliacao(data){
     const on=btn.classList.contains('on');
     box.querySelectorAll('.crit-btn').forEach(x=>x.classList.remove('on'));
     if(!on) btn.classList.add('on');
+    agendarAutosave();
   });
 }
 function avalSelecionada(){ const b=$('md-aval').querySelector('.crit-btn.on'); return b?b.dataset.a:null; }
@@ -1466,9 +1499,8 @@ function recalcular(){
   $('md-nota').textContent = nota==null?'—':nota.toFixed(2).replace('.',',');
   return nota;
 }
-async function salvarLancamento(){
-  const msg=$('md-msg'); msg.textContent='';
-  if($('md-zero').checked && !$('md-motivo').value){ msg.textContent='Escolha o motivo do zero.'; return; }
+function coletarPayloadLancamento(){
+  if($('md-zero').checked && !$('md-motivo').value) return {invalido:true};
   const ehAtiv=redAtual.banca==='Atividade';
   const ativa=notaAtiva(); const zero=$('md-zero').checked; const v=ehAtiv?null:lerCriterios();
   const nota=recalcular();
@@ -1491,11 +1523,33 @@ async function salvarLancamento(){
     else if(redAtual.banca==='UECE'){payload.uece_t=v.t;payload.uece_ng=v.ng;payload.uece_ce=v.ce;payload.uece_lne=v.lne;}
     else payload.unifor_erros=v.erros;
   }
+  return {invalido:false, payload};
+}
+async function salvarLancamento(){
+  const msg=$('md-msg'); msg.textContent='';
+  const {invalido, payload}=coletarPayloadLancamento();
+  if(invalido){ msg.textContent='Escolha o motivo do zero.'; return; }
   $('md-salvar').disabled=true;
   const {error}=await sb.from('lancamentos').upsert(payload,{onConflict:'redacao_id,matricula'});
   $('md-salvar').disabled=false;
   if(error){msg.textContent='Erro ao salvar: '+error.message;return;}
+  setSaveStatus('Salvo','ok');
   $('overlay').classList.add('hide'); listarParaLancar(); if(!$('lp-manual').classList.contains('hide')) montarHoje();
+}
+let autosaveTimer=null;
+function agendarAutosave(){
+  if(!alunoAtual || !redAtual) return;
+  setSaveStatus('Salvando…','muted');
+  clearTimeout(autosaveTimer);
+  autosaveTimer=setTimeout(fazerAutosave,700);
+}
+async function fazerAutosave(){
+  const {invalido, payload}=coletarPayloadLancamento();
+  if(invalido){ setSaveStatus('','muted'); return; }
+  const {error}=await sb.from('lancamentos').upsert(payload,{onConflict:'redacao_id,matricula'});
+  if(error){ setSaveStatus('Não foi possível salvar automaticamente','err'); return; }
+  const hm=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  setSaveStatus('Salvo automaticamente · '+hm,'ok');
 }
 
 // ---------- IMPORTAR ENEM (planilha) ----------
@@ -2846,9 +2900,11 @@ $('rt-uma').onclick=()=>redTab('uma'); $('rt-massa').onclick=()=>redTab('massa')
 $('rm-serie').onchange=()=>{ montarRmEtapa(); montarRmTurmasHint(); rmHeader(); addRmRow(); }; $('rm-add').onclick=addRmRow; $('rm-datas').onclick=rmSequenciaDatas; $('rm-criar').onclick=criarEmMassa;
 $('rl-ano').onchange=listarRedacoes; $('rl-turma').onchange=listarRedacoes;
 $('x-ano').onchange=carregarRedacoesSelect; $('x-turma').onchange=()=>{ atualizarEtapasLancar(); carregarRedacoesSelect(); }; $('x-etapa').onchange=carregarRedacoesSelect; $('x-red').onchange=abrirRedacao; $('x-grupo').onchange=listarParaLancar;
-document.querySelectorAll('#md-freq button').forEach(b=>b.onclick=()=>{setFreq(b.dataset.f);aplicarRegras();recalcular();});
-$('md-zero').onchange=()=>{aplicarRegras();recalcular();};
-$('md-cancel').onclick=()=>$('overlay').classList.add('hide');
+document.querySelectorAll('#md-freq button').forEach(b=>b.onclick=()=>{setFreq(b.dataset.f);aplicarRegras();recalcular();agendarAutosave();});
+$('md-zero').onchange=()=>{aplicarRegras();recalcular();agendarAutosave();};
+$('md-motivo').onchange=agendarAutosave;
+$('md-data').onchange=agendarAutosave;
+$('md-cancel').onclick=()=>{ clearTimeout(autosaveTimer); $('overlay').classList.add('hide'); listarParaLancar(); if(!$('lp-manual').classList.contains('hide')) montarHoje(); };
 $('md-salvar').onclick=salvarLancamento;
 $('overlay').addEventListener('click',e=>{if(e.target===$('overlay'))$('overlay').classList.add('hide');});
 
