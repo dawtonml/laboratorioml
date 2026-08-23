@@ -202,6 +202,12 @@
   .prog-tit{font-size:11px;color:var(--muted);margin-top:3px}
   .prog-tit .f{color:var(--danger);font-weight:600}
   .eixo-chip{padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap;display:inline-block}
+  .eixo-row{display:flex;align-items:center;gap:10px;margin:7px 0}
+  .eixo-row .lbl{flex:0 0 230px;font-size:12.5px;display:flex;align-items:center;gap:6px}
+  .eixo-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+  .eixo-row .bar-bg{flex:1;height:10px;background:var(--line);border-radius:6px;overflow:hidden}
+  .eixo-row .bar-fill{height:100%;border-radius:6px}
+  .eixo-row .val{flex:0 0 44px;text-align:right;font-weight:600;font-size:13px}
 </style>
 </head>
 <body>
@@ -534,6 +540,11 @@
             <p class="sub-note">Média das redações ENEM corrigidas. A barra em vermelho aponta a competência mais frágil dele.</p>
             <div class="chart-wrap" id="k-comp"></div>
           </div>
+          <div class="panel hide" id="k-eixo-panel">
+            <h3>Média do aluno por eixo temático</h3>
+            <p class="sub-note">Considera as redações do aluno que têm eixo temático cadastrado.</p>
+            <div id="k-eixo"></div>
+          </div>
           <div class="panel">
             <h3>Redações</h3>
             <div style="overflow-x:auto"><table class="tbl" id="k-tbl"></table></div>
@@ -581,6 +592,7 @@
           </div>
           <div class="row-actions">
             <button class="primary" id="b-gerar">Gerar fechamento</button>
+            <button id="b-print" class="hide">Imprimir / PDF</button>
             <button id="b-csv" class="hide">Baixar CSV</button>
             <span class="msg" id="b-msg"></span>
           </div>
@@ -636,6 +648,24 @@
           </div>
         </div>
         <div class="empty hide" id="cc-empty">Nenhuma redação ENEM cadastrada para esta turma neste ano.</div>
+      </div>
+
+      <!-- VISÃO 5b: DESEMPENHO POR EIXO TEMÁTICO -->
+      <div id="cp-eixo" class="hide">
+        <div class="panel">
+          <div class="grid2">
+            <div><label for="ce-ano">Ano</label><select id="ce-ano"></select></div>
+            <div><label for="ce-turma">Turma</label><select id="ce-turma"></select></div>
+          </div>
+        </div>
+        <div id="ce-res" class="hide">
+          <div class="panel">
+            <div class="list-head"><h3 id="ce-titulo"></h3><span class="hint" id="ce-sub"></span></div>
+            <p class="sub-note">Média das notas da turma em cada eixo temático, considerando as redações do ano que têm eixo cadastrado.</p>
+            <div id="ce-bars"></div>
+          </div>
+        </div>
+        <div class="empty hide" id="ce-empty">Nenhuma redação com eixo temático cadastrado para esta turma neste ano.</div>
       </div>
 
       <!-- VISÃO 6: PENDÊNCIAS -->
@@ -1024,8 +1054,8 @@ async function carregarRefs(){
   ANOS=(a||[]).map(x=>x.ano);
   const optT=turmasVisiveis().map(x=>`<option value="${x.codigo}">${x.nome}</option>`).join('');
   const optA=ANOS.map(x=>`<option value="${x}">${x}</option>`).join('');
-  ['c-turma','r-turma','x-turma','k-turma','q-turma','b-turma','ea-turma','h-turma','pr-turma','pr-dturma','ex-turma','hh-turma','cc-turma','pd-turma','vc-turma','fq-turma','im-turma','fe-turma','fc-turma'].forEach(id=>$(id).innerHTML=optT);
-  ['c-ano','l-ano','r-ano','rl-ano','x-ano','k-ano','q-ano','b-ano','h-ano','pr-ano','pr-dano','ex-ano','hh-ano','cc-ano','pd-ano','fq-ano','im-ano','fe-ano','lb-ano','rm-ano','fc-ano'].forEach(id=>$(id).innerHTML=optA);
+  ['c-turma','r-turma','x-turma','k-turma','q-turma','b-turma','ea-turma','h-turma','pr-turma','pr-dturma','ex-turma','hh-turma','cc-turma','pd-turma','vc-turma','fq-turma','im-turma','fe-turma','fc-turma','ce-turma'].forEach(id=>$(id).innerHTML=optT);
+  ['c-ano','l-ano','r-ano','rl-ano','x-ano','k-ano','q-ano','b-ano','h-ano','pr-ano','pr-dano','ex-ano','hh-ano','cc-ano','pd-ano','fq-ano','im-ano','fe-ano','lb-ano','rm-ano','fc-ano','ce-ano'].forEach(id=>$(id).innerHTML=optA);
   $('l-turma').innerHTML='<option value="">Selecione a turma…</option>'+optT;
   $('rl-turma').innerHTML='<option value="">Selecione a turma…</option>'+optT;
   try{ const {data:ld}=await sb.from('laboratorio_dias').select('*'); LAB={}; (ld||[]).forEach(x=>LAB[x.ano+'|'+x.serie]={dia:x.dia}); }catch(e){ LAB={}; }
@@ -1859,11 +1889,26 @@ function compBars(elId, medias){ // medias = [c1..c5] (média 0-200 ou null)
     yMax:200, colorFn:v=> v===minV ? 'var(--danger)' : 'var(--accent)', fmt:v=>Math.round(v)
   });
 }
+function eixoMediasFromRows(rows){ // rows: [{eixo, nota}]
+  const acc={}; EIXOS.forEach(e=>acc[e.id]=[0,0]);
+  rows.forEach(r=>{ if(r.eixo && acc[r.eixo] && r.nota!=null){ acc[r.eixo][0]+=r.nota; acc[r.eixo][1]++; } });
+  return EIXOS.map(e=>({...e, cnt:acc[e.id][1], media: acc[e.id][1]? +(acc[e.id][0]/acc[e.id][1]).toFixed(2):null }));
+}
+function eixoBarsHTML(medias){
+  return medias.map(m=>{
+    const pct = m.media!=null ? Math.min(100, m.media/10*100) : 0;
+    return `<div class="eixo-row">
+      <div class="lbl"><span class="eixo-dot" style="background:${m.fg}"></span>${esc(m.id)}</div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${m.bg}"></div></div>
+      <div class="val">${m.media==null?'—':fmtN1(m.media)}</div>
+    </div>`;
+  }).join('');
+}
 
 function prepararConsultas(){ consCarregarAlunos(); consCarregarRedacoes(); consEtapaOpts(); listarHorarios(); carregarFreqRedacoes(); atualizarEtapasFE(); montarCalEtapa(); montarHEtapa(); consGrupo('desempenho'); }
-const TODAS_SUBS=['aluno','red','comp','etapa','pend','freq','fetapa','hor','cal'];
+const TODAS_SUBS=['aluno','red','comp','eixo','etapa','pend','freq','fetapa','hor','cal'];
 const CONS_GRUPOS={
-  desempenho:{subs:[['aluno','Por aluno'],['red','Por redação'],['comp','Por competência']]},
+  desempenho:{subs:[['aluno','Por aluno'],['red','Por redação'],['comp','Por competência'],['eixo','Por eixo']]},
   fechamento:{subs:[['etapa','Boletim da etapa'],['pend','Pendências']]},
   freq:{subs:[['freq','Por redação'],['fetapa','Por etapa']]},
   prog:{subs:[['hor','Horários'],['cal','Calendário']]}
@@ -1872,6 +1917,7 @@ function consTab(which){
   if(which==='comp') setTimeout(consCompetencias,0);
   if(which==='pend') setTimeout(consPendencias,0);
   if(which==='cal') setTimeout(consCalendario,0);
+  if(which==='eixo') setTimeout(consEixo,0);
   TODAS_SUBS.forEach(w=>{ const pn=$('cp-'+w); if(pn) pn.classList.toggle('hide', w!==which); });
   document.querySelectorAll('#cons-subs button').forEach(b=>b.classList.toggle('on', b.dataset.w===which));
 }
@@ -1886,8 +1932,8 @@ function consGrupo(g){
 // ---------- VISÃO 1: HISTÓRICO DO ALUNO ----------
 async function consCarregarAlunos(){
   const ano=+$('k-ano').value, turma=$('k-turma').value;
-  const {data}=await sb.from('matriculas_ano').select('matricula,grupo,horario,ativo').eq('ano',ano).eq('turma',turma).order('horario');
-  $('k-aluno').innerHTML='<option value="">Selecione o aluno…</option>'+ordenarAlfa(data).map(a=>`<option value="${a.matricula}">${matNomeCurto(a.matricula)} · Grupo ${a.grupo}${a.ativo?'':' · saiu'}</option>`).join('');
+  const {data}=await sb.from('matriculas_ano').select('matricula,grupo,horario').eq('ano',ano).eq('turma',turma).eq('ativo',true).order('horario');
+  $('k-aluno').innerHTML='<option value="">Selecione o aluno…</option>'+ordenarAlfa(data).map(a=>`<option value="${a.matricula}">${matNomeCurto(a.matricula)} · Grupo ${a.grupo}</option>`).join('');
   $('k-res').classList.add('hide'); $('k-empty').classList.remove('hide');
 }
 async function consAluno(){
@@ -1946,6 +1992,8 @@ async function consAluno(){
     : '<div class="empty">Nenhuma redação cadastrada para esta série neste ano.</div>';
 
   compBars('k-comp', compSoma.map((s,k)=> compCnt[k] ? +(s/compCnt[k]).toFixed(1) : null));
+  const eixoMediasAluno=eixoMediasFromRows(rows.map(x=>({eixo:x.red?x.red.eixo_tematico:null, nota:x.nota})));
+  if(eixoMediasAluno.some(m=>m.cnt>0)){ $('k-eixo-panel').classList.remove('hide'); $('k-eixo').innerHTML=eixoBarsHTML(eixoMediasAluno); } else { $('k-eixo-panel').classList.add('hide'); }
 
   let h=`<thead><tr><th>Redação</th><th>Turma</th><th>Data</th><th>Banca</th><th>Eixo</th><th>Etapa</th><th>Frequência</th><th class="num">Nota</th><th>Detalhe</th></tr></thead><tbody>`;
   rows.forEach(({rot,r,l,nota,lTurma,red})=>{
@@ -2041,7 +2089,7 @@ async function consBoletim(){
   const {data:alunosRaw}=await sb.from('matriculas_ano').select('matricula,grupo,horario').eq('ano',ano).eq('turma',turma).eq('ativo',true);
   const alunos=(alunosRaw||[]).slice().sort((a,b)=>{ const na=nomeDe(a.matricula)||a.matricula, nb=nomeDe(b.matricula)||b.matricula; return na.localeCompare(nb,'pt-BR',{sensitivity:'base'}); });
   const ids=reds.map(r=>r.id);
-  const {data:lancs}=await sb.from('lancamentos').select('redacao_id,matricula,nota_final,zero_direto').in('redacao_id',ids);
+  const {data:lancs}=await sb.from('lancamentos').select('redacao_id,matricula,nota_final,zero_direto,frequencia').in('redacao_id',ids);
   const cel={}; (lancs||[]).forEach(l=>{ cel[l.matricula+'|'+l.redacao_id]=l; });
   const redById={}; reds.forEach(r=>redById[r.id]=r);
 
@@ -2050,23 +2098,26 @@ async function consBoletim(){
   let head=`<thead><tr><th class="stick">Matrícula</th>`;
   if(eh3a) head+=`<th title="2ª maior nota da etapa">N1</th><th title="3ª maior nota da etapa">N3</th><th title="1ª maior nota da etapa">N2</th><th class="med" title="(N1+N3+N2+N2)/4, como no sistema oficial">Média oficial</th>`;
   reds.forEach(r=>{ const pz=(r.tipo==='comum'&&r.penalidade)?' *':''; head+=`<th title="${esc(dataBR(r.data))} · ${r.banca}${pz?' · penalidade −'+fmtN1(r.penalidade):''}">${esc(r.rotulo)}${pz}</th>`; });
-  head+=`<th class="med">Média</th></tr></thead>`;
+  head+=`<th class="med">Média</th><th class="num" title="Faltas não justificadas na etapa">Faltas</th></tr></thead>`;
 
   // linhas
   const colSoma=reds.map(()=>0), colCnt=reds.map(()=>0);
-  let geralSoma=0, geralCnt=0;
-  const csv=[['Matrícula','Nome', ...(eh3a?['N1','N3','N2','Média oficial']:[]), 'Grupo', ...reds.map(r=>r.rotulo), 'Média da etapa']];
+  let geralSoma=0, geralCnt=0, geralFaltas=0;
+  const csv=[['Matrícula','Nome', ...(eh3a?['N1','N3','N2','Média oficial']:[]), 'Grupo', ...reds.map(r=>r.rotulo), 'Média da etapa', 'Faltas não justificadas']];
   let body='<tbody>';
   (alunos||[]).forEach(a=>{
-    let linSoma=0, linCnt=0; let tds=''; const notasAluno=[];
+    let linSoma=0, linCnt=0; let tds=''; const notasAluno=[]; let faltasAluno=0;
     const csvRow=[a.matricula, nomeCurto(nomeDe(a.matricula),2)||''];
     reds.forEach((r,j)=>{
-      const nv=notaEfetiva(r, cel[a.matricula+'|'+r.id]);
+      const l=cel[a.matricula+'|'+r.id];
+      const nv=notaEfetiva(r, l);
       if(nv!=null){ tds+=`<td>${pill(nv)}</td>`; linSoma+=nv; linCnt++; colSoma[j]+=nv; colCnt[j]++; notasAluno.push(nv); }
       else { tds+=`<td><span class="pill f-na">—</span></td>`; }
+      if(l&&l.frequencia==='falta') faltasAluno++;
     });
     const med=linCnt?linSoma/linCnt:null;
     if(med!=null){ geralSoma+=med; geralCnt++; }
+    geralFaltas+=faltasAluno;
     let tdsExtra='';
     if(eh3a){
       const H=notasAluno.slice().sort((x,y)=>y-x);
@@ -2079,8 +2130,10 @@ async function consBoletim(){
     csvRow.push(a.grupo);
     reds.forEach((r,j)=>{ const nv=notaEfetiva(r, cel[a.matricula+'|'+r.id]); csvRow.push(nv==null?'':fmtN(nv)); });
     csvRow.push(med==null?'':fmtN(med));
+    csvRow.push(faltasAluno);
     csv.push(csvRow);
-    body+=`<tr><td class="stick mono">${matNome(a.matricula)}</td>${tdsExtra}${tds}<td class="med">${fmtN(med)}</td></tr>`;
+    const faltasTd = faltasAluno ? `<span class="pill f-lo">${faltasAluno}</span>` : '0';
+    body+=`<tr><td class="stick mono">${matNome(a.matricula)}</td>${tdsExtra}${tds}<td class="med">${fmtN(med)}</td><td class="num">${faltasTd}</td></tr>`;
   });
   body+='</tbody>';
 
@@ -2089,8 +2142,9 @@ async function consBoletim(){
   if(eh3a) foot+='<td></td><td></td><td></td><td></td>';
   const csvFoot=['Média da turma','', ...(eh3a?['','','','']:[])];
   reds.forEach((r,j)=>{ const m=colCnt[j]?colSoma[j]/colCnt[j]:null; foot+=`<td>${fmtN1(m)}</td>`; csvFoot.push(m==null?'':fmtN(m)); });
-  foot+=`<td class="med">${fmtN1(geralCnt?geralSoma/geralCnt:null)}</td></tr></tfoot>`;
+  foot+=`<td class="med">${fmtN1(geralCnt?geralSoma/geralCnt:null)}</td><td class="num">${geralFaltas||''}</td></tr></tfoot>`;
   csvFoot.push(geralCnt?fmtN(geralSoma/geralCnt):'');
+  csvFoot.push(geralFaltas);
   csv.push(csvFoot);
 
   $('b-tbl').innerHTML=head+body+foot;
@@ -2099,8 +2153,25 @@ async function consBoletim(){
   const penReds=reds.filter(r=>r.tipo==='comum'&&r.penalidade);
   $('b-penal').innerHTML=penReds.length?('<strong>* Penalidades já descontadas:</strong> '+penReds.map(r=>`${esc(r.rotulo)} −${fmtN1(r.penalidade)}${r.penalidade_motivo?' ('+esc(r.penalidade_motivo)+')':''}`).join(' · ')):'';
   boletimCSV={rows:csv, nome:`boletim_${turma}_etapa${etapa}_${ano}.csv`};
+  boletimImpressao={
+    titulo:`Fechamento por etapa — ${TURMA_NOME[turma]||turma}`,
+    sub:`${etapa}ª etapa · ${ano}`,
+    tabela: head+body+foot,
+    penalTxt: $('b-penal').innerHTML,
+    eh3a
+  };
+  $('b-print').classList.remove('hide');
   $('b-csv').classList.remove('hide');
   $('b-empty').classList.add('hide'); $('b-res').classList.remove('hide');
+}
+let boletimImpressao=null;
+function imprimirBoletimEtapa(){
+  if(!boletimImpressao) return;
+  let corpo='<style>@page{size:landscape}.b-print-tbl{font-size:10px}.b-print-tbl th,.b-print-tbl td{padding:4px 6px}</style>';
+  if(boletimImpressao.eh3a) corpo+='<p class="sub-note">N1, N3 e N2 são as notas na ordem de digitação do sistema oficial (2ª maior, 3ª maior e 1ª maior nota da etapa). Média oficial = (N1+N3+N2+N2)/4.</p>';
+  corpo+=`<table class="b-print-tbl">${boletimImpressao.tabela}</table>`;
+  if(boletimImpressao.penalTxt) corpo+=`<p class="sub-note" style="margin-top:12px">${boletimImpressao.penalTxt}</p>`;
+  abrirImpressao(boletimImpressao.titulo, boletimImpressao.sub, corpo);
 }
 function baixarBoletimCSV(){
   if(!boletimCSV) return;
@@ -2821,6 +2892,21 @@ function imprimirFreqEtapa(){
   abrirImpressao('Frequência da etapa', `${TURMA_NOME[turma]||turma} · ${etapa}ª etapa · ${ano}`, corpo);
 }
 
+async function consEixo(){
+  const ano=+$('ce-ano').value, turma=$('ce-turma').value;
+  const {data:reds}=await sb.from('redacoes').select('id,eixo_tematico,tipo,penalidade').eq('ano',ano).eq('turma',turma).neq('banca','Atividade');
+  const comEixo=(reds||[]).filter(r=>r.eixo_tematico);
+  if(!comEixo.length){ $('ce-res').classList.add('hide'); $('ce-empty').classList.remove('hide'); return; }
+  const redById={}; comEixo.forEach(r=>redById[r.id]=r);
+  const ids=comEixo.map(r=>r.id);
+  const {data:lancs}=await sb.from('lancamentos').select('redacao_id,nota_final,zero_direto').in('redacao_id',ids);
+  const rows=(lancs||[]).map(l=>({eixo:redById[l.redacao_id].eixo_tematico, nota:notaEfetiva(redById[l.redacao_id],l)}));
+  const medias=eixoMediasFromRows(rows);
+  $('ce-titulo').textContent=`${TURMA_NOME[turma]||turma} · ${ano}`;
+  $('ce-sub').textContent=`${comEixo.length} ${comEixo.length===1?'redação':'redações'} com eixo cadastrado`;
+  $('ce-bars').innerHTML=eixoBarsHTML(medias);
+  $('ce-empty').classList.add('hide'); $('ce-res').classList.remove('hide');
+}
 // ---------- CALENDÁRIO ----------
 let calData=null;
 function montarCalEtapa(){ $('fc-etapa').innerHTML='<option value="">Todas as etapas</option>'+opcoesEtapa($('fc-turma').value); }
@@ -2922,6 +3008,7 @@ $('nav-cad').onclick=()=>irPara('cad'); $('nav-red').onclick=()=>irPara('red'); 
 $('ad-criar').onclick=criarLogin; $('ts-btn').onclick=trocarSenha; $('an-btn').onclick=abrirAno;
 document.querySelectorAll('#cons-grupos button').forEach(b=>b.onclick=()=>consGrupo(b.dataset.g));
 $('fc-ano').onchange=consCalendario; $('fc-turma').onchange=()=>{ montarCalEtapa(); consCalendario(); }; $('fc-etapa').onchange=consCalendario; $('fc-print').onclick=imprimirCalendario;
+$('ce-ano').onchange=consEixo; $('ce-turma').onchange=consEixo;
 $('fe-turma').onchange=atualizarEtapasFE; $('fe-gerar').onclick=consFreqEtapa; $('fe-print').onclick=imprimirFreqEtapa;
 $('cc-ano').onchange=consCompetencias; $('cc-turma').onchange=consCompetencias;
 $('pd-ano').onchange=consPendencias; $('pd-turma').onchange=consPendencias; $('pd-grupo').onchange=consPendencias;
@@ -2939,7 +3026,8 @@ $('h-ano').onchange=listarHorarios; $('h-turma').onchange=()=>{ montarHEtapa(); 
 $('h-print-mh').onclick=()=>imprimirRoster(false); $('h-print-dias').onclick=()=>imprimirRoster(true);
 $('k-ano').onchange=consCarregarAlunos; $('k-turma').onchange=consCarregarAlunos; $('k-aluno').onchange=consAluno;
 $('q-ano').onchange=consCarregarRedacoes; $('q-turma').onchange=consCarregarRedacoes; $('q-red').onchange=consRedacao;
-$('b-turma').onchange=consEtapaOpts; $('b-gerar').onclick=consBoletim; $('b-csv').onclick=baixarBoletimCSV;
+$('b-turma').onchange=consEtapaOpts; $('b-gerar').onclick=consBoletim; $('b-print').onclick=imprimirBoletimEtapa;
+$('b-csv').onclick=baixarBoletimCSV;
 $('t-ind').onclick=()=>cadTab('ind'); $('t-massa').onclick=()=>cadTab('massa'); $('t-lote').onclick=()=>cadTab('lote');
 $('pr-listar').onclick=prListar; $('pr-exec').onclick=prExec; $('pr-all').onchange=()=>chkTodos('pr-lista','pr-all','pr-count');
 $('ex-listar').onclick=exListar; $('ex-exec').onclick=exExec; $('ex-all').onchange=()=>chkTodos('ex-lista','ex-all','ex-count');
