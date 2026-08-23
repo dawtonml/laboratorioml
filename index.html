@@ -201,6 +201,7 @@
   .prog-fill.ok{background:var(--brand2)}
   .prog-tit{font-size:11px;color:var(--muted);margin-top:3px}
   .prog-tit .f{color:var(--danger);font-weight:600}
+  .eixo-chip{padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap;display:inline-block}
 </style>
 </head>
 <body>
@@ -386,6 +387,7 @@
             <select id="r-tipo"><option value="comum">Comum</option><option value="prova">Prova</option></select></div>
           <div><label for="r-etapa">Etapa letiva</label><select id="r-etapa"></select></div>
         </div>
+        <div style="margin-top:14px"><label for="r-eixo">Eixo temático</label><select id="r-eixo"><option value="">— Eixo temático (opcional) —</option><option value="Cidadania e Inclusão Social">Cidadania e Inclusão Social</option><option value="Educação e Conhecimento">Educação e Conhecimento</option><option value="Cultura e Identidade">Cultura e Identidade</option><option value="Mídia e Comunicação">Mídia e Comunicação</option><option value="Tecnologia e Informação">Tecnologia e Informação</option><option value="Meio Ambiente e Sustentabilidade">Meio Ambiente e Sustentabilidade</option><option value="Saúde e Qualidade de Vida">Saúde e Qualidade de Vida</option><option value="Trabalho e Economia">Trabalho e Economia</option></select></div>
         <div class="grid2" id="r-pen-row" style="margin-top:14px">
           <div><label for="r-pen">Penalidade na nota final (desconto)</label><input id="r-pen" type="number" min="0" step="0.4" value="0"></div>
           <div><label for="r-pen-motivo">Justificativa da penalidade</label><input id="r-pen-motivo" type="text" value="Indisciplina"></div>
@@ -908,6 +910,7 @@
       <div><label for="er-tipo">Tipo</label>
         <select id="er-tipo"><option value="comum">Comum</option><option value="prova">Prova</option></select></div>
     </div>
+    <div style="margin-top:14px"><label for="er-eixo">Eixo temático</label><select id="er-eixo"><option value="">— Eixo temático (opcional) —</option><option value="Cidadania e Inclusão Social">Cidadania e Inclusão Social</option><option value="Educação e Conhecimento">Educação e Conhecimento</option><option value="Cultura e Identidade">Cultura e Identidade</option><option value="Mídia e Comunicação">Mídia e Comunicação</option><option value="Tecnologia e Informação">Tecnologia e Informação</option><option value="Meio Ambiente e Sustentabilidade">Meio Ambiente e Sustentabilidade</option><option value="Saúde e Qualidade de Vida">Saúde e Qualidade de Vida</option><option value="Trabalho e Economia">Trabalho e Economia</option></select></div>
     <div class="grid2" id="er-pen-row" style="margin-top:14px">
       <div><label for="er-pen">Penalidade na nota final</label><input id="er-pen" type="number" min="0" step="0.4" value="0"></div>
       <div><label for="er-pen-motivo">Justificativa</label><input id="er-pen-motivo" type="text" value="Indisciplina"></div>
@@ -932,6 +935,18 @@ const $ = (id)=>document.getElementById(id);
 
 const ROTULOS_BASE = Array.from({length:20},(_,i)=>'R'+(i+1)).concat(['AVP','AVB']).concat(['ATV']);
 const ROTULOS_3EM  = ['1SAS','2SAS','3SAS','4SAS','5SAS','6SAS','1UECE','2UECE','3UECE','4UECE','1UNIFOR','2UNIFOR','3UNIFOR','4UNIFOR'];
+const EIXOS = [
+  {id:'Cidadania e Inclusão Social', bg:'#DCEEF2', fg:'#1C6B7A'},
+  {id:'Educação e Conhecimento', bg:'#E1E8FB', fg:'#33469C'},
+  {id:'Cultura e Identidade', bg:'#F0E3FA', fg:'#7A3FA0'},
+  {id:'Mídia e Comunicação', bg:'#FBE1EC', fg:'#B23A6B'},
+  {id:'Tecnologia e Informação', bg:'#D9F4F1', fg:'#177E76'},
+  {id:'Meio Ambiente e Sustentabilidade', bg:'#E1F3DE', fg:'#3C7A3F'},
+  {id:'Saúde e Qualidade de Vida', bg:'#FBE8D9', fg:'#B0602A'},
+  {id:'Trabalho e Economia', bg:'#FBF3D2', fg:'#8A6D1B'}
+];
+function eixoChip(nome){ if(!nome) return ''; const e=EIXOS.find(x=>x.id===nome); if(!e) return `<span class="eixo-chip" style="background:var(--line)">${esc(nome)}</span>`; return `<span class="eixo-chip" style="background:${e.bg};color:${e.fg}">${esc(nome)}</span>`; }
+function optsEixo(sel){ return '<option value="">— Eixo temático (opcional) —</option>'+EIXOS.map(e=>`<option value="${esc(e.id)}"${sel===e.id?' selected':''}>${esc(e.id)}</option>`).join(''); }
 function rotuloComContexto(rotulo, etapa, dataISO){
   if(rotulo==='ATV'){ if(!dataISO) return 'ATV'; const [y,m,d]=dataISO.split('-'); return 'ATV '+d+'/'+m; }
   if(rotulo==='AVP'||rotulo==='AVB') return `${rotulo} E${etapa}`;
@@ -974,7 +989,7 @@ let LAB={};
 let NOMES={};
 function nomeDe(m){ return NOMES[m]||''; }
 function matNome(m){ const n=NOMES[m]; return n? esc(m)+' · '+esc(n) : esc(m); }
-function nomeCurto(n){ if(!n) return ''; return String(n).trim().split(/\s+/).slice(0,3).join(' '); }
+function nomeCurto(n,qtd=3){ if(!n) return ''; return String(n).trim().split(/\s+/).slice(0,qtd).join(' '); }
 function matNomeCurto(m){ const n=NOMES[m]; return n? esc(m)+' · '+esc(nomeCurto(n)) : esc(m); }
 function ordenarAlfa(arr){ return (arr||[]).slice().sort((a,b)=>{ const na=nomeDe(a.matricula)||a.matricula, nb=nomeDe(b.matricula)||b.matricula; return na.localeCompare(nb,'pt-BR',{sensitivity:'base'}); }); }
 const DIAS_SEMANA=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
@@ -1158,6 +1173,7 @@ async function salvarRedacao(){
   const pen=ehComum? Math.max(0,+$('r-pen').value||0):0;
   const rec={ano:+$('r-ano').value,turma:$('r-turma').value,rotulo:$('r-rotulo').value,
     data:(g1||g2), data_g1:g1||null, data_g2:g2||null, banca:$('r-banca').value,tipo:$('r-tipo').value,etapa:+$('r-etapa').value,
+    eixo_tematico: $('r-eixo').value||null,
     penalidade:pen, penalidade_motivo: pen>0?($('r-pen-motivo').value||'Indisciplina'):null,
     criado_por:perfil?perfil.login:null};
   rec.rotulo=rotuloComContexto(rec.rotulo, rec.etapa, rec.data);
@@ -1177,13 +1193,14 @@ function turmasDaSerie(serie){ return TURMAS.filter(t=>serieDe(t.codigo)===serie
 function serieRepresentativa(){ return turmasDaSerie($('rm-serie').value)[0]||$('rm-serie').value; }
 function montarRmEtapa(){ $('rm-etapa').innerHTML=opcoesEtapa(serieRepresentativa()); }
 function montarRmTurmasHint(){ const ts=turmasDaSerie($('rm-serie').value); $('rm-turmas').textContent = ts.length?('Serão criadas para: '+ts.map(c=>TURMA_NOME[c]||c).join(', ')):'Nenhuma turma nesta série.'; }
-function rmHeader(){ $('rm-tbl').innerHTML='<thead><tr><th>Rótulo</th><th>Banca</th><th>Tipo</th><th>Correção G1</th><th>Correção G2</th><th></th></tr></thead><tbody></tbody>'; }
+function rmHeader(){ $('rm-tbl').innerHTML='<thead><tr><th>Rótulo</th><th>Banca</th><th>Tipo</th><th>Eixo temático</th><th>Correção G1</th><th>Correção G2</th><th></th></tr></thead><tbody></tbody>'; }
 function addRmRow(){
   const rots=rotulosDaTurma(serieRepresentativa());
   const tr=document.createElement('tr');
   tr.innerHTML=`<td><select class="rm-rot">${rots.map(x=>`<option>${x}</option>`).join('')}</select></td>
     <td><select class="rm-banca"><option>ENEM</option><option>UECE</option><option>UNIFOR</option><option>Atividade</option></select></td>
     <td><select class="rm-tipo"><option value="comum">Comum</option><option value="prova">Prova</option></select></td>
+    <td><select class="rm-eixo">${optsEixo()}</select></td>
     <td><input class="rm-g1" type="date"></td>
     <td><input class="rm-g2" type="date"></td>
     <td class="num"><button class="rm-del" title="Remover">×</button></td>`;
@@ -1209,7 +1226,7 @@ async function criarEmMassa(){
     const rotulo=tr.querySelector('.rm-rot').value;
     const g1=tr.querySelector('.rm-g1').value, g2=tr.querySelector('.rm-g2').value;
     if(!rotulo || (!g1&&!g2)) return;
-    defs.push({rotulo, banca:tr.querySelector('.rm-banca').value, tipo:tr.querySelector('.rm-tipo').value, g1, g2});
+    defs.push({rotulo, banca:tr.querySelector('.rm-banca').value, tipo:tr.querySelector('.rm-tipo').value, eixo:tr.querySelector('.rm-eixo').value||null, g1, g2});
   });
   if(!defs.length){ msg.className='msg err'; msg.textContent='Preencha ao menos uma redação com rótulo e data.'; return; }
   $('rm-criar').disabled=true; msg.textContent='Criando…';
@@ -1217,7 +1234,7 @@ async function criarEmMassa(){
   for(const d of defs){
     for(const turma of turmas){
       const rotuloFinal = rotuloComContexto(d.rotulo, etapa, d.g1||d.g2);
-      const rec={ano,turma,rotulo:rotuloFinal,data:(d.g1||d.g2),data_g1:d.g1||null,data_g2:d.g2||null,banca:d.banca,tipo:(d.rotulo==='AVP'||d.rotulo==='AVB')?'prova':d.tipo,etapa,penalidade:0,penalidade_motivo:null,criado_por:perfil?perfil.login:null};
+      const rec={ano,turma,rotulo:rotuloFinal,data:(d.g1||d.g2),data_g1:d.g1||null,data_g2:d.g2||null,banca:d.banca,tipo:(d.rotulo==='AVP'||d.rotulo==='AVB')?'prova':d.tipo,etapa,eixo_tematico:d.eixo,penalidade:0,penalidade_motivo:null,criado_por:perfil?perfil.login:null};
       const {error}=await sb.from('redacoes').insert(rec);
       if(!error) criadas++; else if(error.code==='23505') existiam++; else erros++;
     }
@@ -1244,7 +1261,7 @@ async function listarRedacoes(){
     const et=r.etapa?` · ${r.etapa}ª etapa`:'';
     d.innerHTML=`<div class="av">${r.rotulo}</div>
       <div class="info"><div class="m" style="font-family:'Spectral',serif">${TURMA_NOME[r.turma]||r.turma}</div>
-      <div class="sub">${datasStr} · ${r.banca==='Atividade'?'Atividade':`<span class="red-chip">${r.banca}</span> · ${r.tipo==='prova'?'Prova':'Comum'}`}${et}</div></div>`;
+      <div class="sub">${datasStr} · ${r.banca==='Atividade'?'Atividade':`<span class="red-chip">${r.banca}</span> · ${r.tipo==='prova'?'Prova':'Comum'}`}${et}${r.eixo_tematico?' · '+eixoChip(r.eixo_tematico):''}</div></div>`;
     d.onclick=()=>abrirEditarRedacao(r);
     lista.appendChild(d);
   });
@@ -1597,7 +1614,7 @@ async function importArquivo(ev){
   ev.target.value='';
 }
 function arred40(n){ return Math.max(0, Math.min(200, Math.round(n/40)*40)); }
-let importValidos=[];
+let importValidos=[]; let importFaltas=[];
 async function preverImport(){
   const msg=$('im-msg'); msg.className='msg'; msg.textContent='';
   const redId=+$('im-red').value;
@@ -1611,9 +1628,10 @@ async function preverImport(){
     const c=ln.split(/[\s,;]+/).filter(Boolean);
     if(!/^\d{3,}$/.test(c[0])) return; // ignora cabeçalho ou linha sem matrícula
     const mat=c[0];
-    let problema=null, ajustado=false;
+    let problema=null, ajustado=false, falta=false;
     const vals=[];
-    if(c.length<6){ problema='faltam competências'; }
+    if(c.length===1){ falta=true; }
+    else if(c.length<6){ problema='faltam competências'; }
     else {
       for(let i=1;i<=5;i++){
         let n=Number(String(c[i]).replace(',','.'));
@@ -1623,22 +1641,24 @@ async function preverImport(){
     }
     if(!problema && !matSet.has(mat)) problema='matrícula não é da turma';
     let nota=null;
-    if(!problema) nota=calcNota('ENEM',{c1:vals[0],c2:vals[1],c3:vals[2],c4:vals[3],c5:vals[4]});
-    rows.push({mat, vals, nota, problema, ajustado});
+    if(!problema && !falta) nota=calcNota('ENEM',{c1:vals[0],c2:vals[1],c3:vals[2],c4:vals[3],c5:vals[4]});
+    rows.push({mat, vals, nota, problema, ajustado, falta});
   });
   if(!rows.length){ msg.className='msg err'; msg.textContent='Nenhuma linha válida encontrada. Confira o formato.'; $('im-prev').classList.add('hide'); return; }
-  importValidos=rows.filter(r=>!r.problema);
-  const comProblema=rows.length-importValidos.length, ajustados=rows.filter(r=>r.ajustado&&!r.problema).length;
+  importValidos=rows.filter(r=>!r.problema && !r.falta);
+  importFaltas=rows.filter(r=>r.falta && !r.problema);
+  const comProblema=rows.length-importValidos.length-importFaltas.length, ajustados=rows.filter(r=>r.ajustado&&!r.problema).length;
   $('im-metrics').innerHTML=metricsHTML([
     {n:rows.length, l:'Linhas lidas'},
-    {n:importValidos.length, l:'Prontas para importar', color:'var(--brand2)'},
+    {n:importValidos.length, l:'Notas prontas para importar', color:'var(--brand2)'},
+    {n:importFaltas.length, l:'Faltas identificadas', color: importFaltas.length?'var(--warn)':null},
     {n:comProblema, l:'Com problema', color: comProblema?'var(--danger)':null},
     {n:ajustados, l:'Ajustadas p/ múltiplo de 40', color: ajustados?'var(--warn)':null}
   ]);
   let h='<thead><tr><th>Matrícula</th><th class="num">C1</th><th class="num">C2</th><th class="num">C3</th><th class="num">C4</th><th class="num">C5</th><th class="num">Nota</th><th>Situação</th></tr></thead><tbody>';
   rows.forEach(r=>{
     const cells = r.vals.length===5 ? r.vals.map(v=>`<td class="num">${v}</td>`).join('') : '<td colspan="5" class="det">—</td>';
-    const sit = r.problema ? `<span class="pill f-lo">${esc(r.problema)}</span>` : (r.ajustado? '<span class="pill f-md">ok (ajustada)</span>' : '<span class="pill f-ok">ok</span>');
+    const sit = r.problema ? `<span class="pill f-lo">${esc(r.problema)}</span>` : r.falta ? `<span class="pill f-md">falta (sem nota)</span>` : (r.ajustado? '<span class="pill f-md">ok (ajustada)</span>' : '<span class="pill f-ok">ok</span>');
     h+=`<tr><td class="mono">${esc(r.mat)}</td>${cells}<td class="num">${r.nota==null?'—':fmtN(r.nota)}</td><td>${sit}</td></tr>`;
   });
   h+='</tbody>'; $('im-tbl').innerHTML=h;
@@ -1646,23 +1666,33 @@ async function preverImport(){
 }
 async function confirmarImport(){
   const msg=$('im-conf-msg'); msg.className='msg';
-  if(!importValidos.length){ msg.className='msg err'; msg.textContent='Não há linhas prontas para importar.'; return; }
+  if(!importValidos.length && !importFaltas.length){ msg.className='msg err'; msg.textContent='Não há linhas prontas para importar.'; return; }
   const redId=+$('im-red').value; if(!redId){ msg.className='msg err'; msg.textContent='Selecione a redação.'; return; }
-  if(!confirm(`Importar ${importValidos.length} nota(s) ENEM? Isso substitui lançamentos existentes dessas matrículas nesta redação.`)) return;
+  const totalMsg=`${importValidos.length} nota(s)`+(importFaltas.length?` e ${importFaltas.length} falta(s)`:'');
+  if(!confirm(`Importar ${totalMsg}? Isso substitui lançamentos existentes dessas matrículas nesta redação.`)) return;
   const agora=new Date().toISOString();
-  const payload=importValidos.map(r=>({
-    redacao_id:redId, matricula:r.mat, frequencia:'presente', data_correcao:hojeISO(),
-    zero_direto:false, motivo_zero:null,
-    enem_c1:r.vals[0],enem_c2:r.vals[1],enem_c3:r.vals[2],enem_c4:r.vals[3],enem_c5:r.vals[4],
-    uece_t:null,uece_ng:null,uece_ce:null,uece_lne:null,unifor_erros:null,
-    nota_final:r.nota, criado_por:perfil?perfil.login:null, atualizado_em:agora
-  }));
+  const payload=[
+    ...importValidos.map(r=>({
+      redacao_id:redId, matricula:r.mat, frequencia:'presente', data_correcao:hojeISO(),
+      zero_direto:false, motivo_zero:null,
+      enem_c1:r.vals[0],enem_c2:r.vals[1],enem_c3:r.vals[2],enem_c4:r.vals[3],enem_c5:r.vals[4],
+      uece_t:null,uece_ng:null,uece_ce:null,uece_lne:null,unifor_erros:null,
+      nota_final:r.nota, criado_por:perfil?perfil.login:null, atualizado_em:agora
+    })),
+    ...importFaltas.map(r=>({
+      redacao_id:redId, matricula:r.mat, frequencia:'falta', data_correcao:null,
+      zero_direto:false, motivo_zero:null,
+      enem_c1:null,enem_c2:null,enem_c3:null,enem_c4:null,enem_c5:null,
+      uece_t:null,uece_ng:null,uece_ce:null,uece_lne:null,unifor_erros:null,
+      nota_final:null, criado_por:perfil?perfil.login:null, atualizado_em:agora
+    }))
+  ];
   $('im-conf').disabled=true; msg.textContent='Importando…';
   const {error}=await sb.from('lancamentos').upsert(payload,{onConflict:'redacao_id,matricula'});
   $('im-conf').disabled=false;
   if(error){ msg.className='msg err'; msg.textContent='Erro: '+error.message; return; }
-  msg.className='msg ok'; msg.textContent=`${payload.length} nota(s) importada(s).`;
-  $('im-txt').value=''; $('im-prev').classList.add('hide'); importValidos=[];
+  msg.className='msg ok'; msg.textContent=`${totalMsg} importado(s).`;
+  $('im-txt').value=''; $('im-prev').classList.add('hide'); importValidos=[]; importFaltas=[];
 }
 
 // ---------- EDITAR ALUNO ----------
@@ -1708,7 +1738,7 @@ function abrirEditarRedacao(r){
   $('er-rotulo').value=r.rotulo;
   $('er-etapa').innerHTML=opcoesEtapa(r.turma); if(r.etapa)$('er-etapa').value=r.etapa;
   $('er-banca').value=r.banca; $('er-tipo').value=r.tipo;
-  $('er-pen').value=r.penalidade||0; $('er-pen-motivo').value=r.penalidade_motivo||'Indisciplina'; togglePenRowEdit();
+  $('er-eixo').value=r.eixo_tematico||''; $('er-pen').value=r.penalidade||0; $('er-pen-motivo').value=r.penalidade_motivo||'Indisciplina'; togglePenRowEdit();
   avisoDatasEdit();
   $('er-apagar').style.display=(perfil&&perfil.papel==='coordenacao')?'inline-flex':'none';
   $('er-msg').textContent='';
@@ -1720,7 +1750,7 @@ async function salvarEditarRedacao(){
   if(!g1&&!g2){msg.textContent='Informe ao menos uma data de correção.';return;}
   const ehComum=$('er-tipo').value==='comum' && $('er-banca').value!=='Atividade';
   const pen=ehComum? Math.max(0,+$('er-pen').value||0):0;
-  const upd={rotulo:$('er-rotulo').value, data:(g1||g2), data_g1:g1||null, data_g2:g2||null, etapa:+$('er-etapa').value,banca:$('er-banca').value,tipo:$('er-tipo').value, penalidade:pen, penalidade_motivo: pen>0?($('er-pen-motivo').value||'Indisciplina'):null};
+  const upd={rotulo:$('er-rotulo').value, data:(g1||g2), data_g1:g1||null, data_g2:g2||null, etapa:+$('er-etapa').value,banca:$('er-banca').value,tipo:$('er-tipo').value, eixo_tematico:$('er-eixo').value||null, penalidade:pen, penalidade_motivo: pen>0?($('er-pen-motivo').value||'Indisciplina'):null};
   upd.rotulo=rotuloComContexto(upd.rotulo, upd.etapa, upd.data);
   $('er-salvar').disabled=true;
   const {error}=await sb.from('redacoes').update(upd).eq('id',redEdit.id);
@@ -1865,7 +1895,7 @@ async function consAluno(){
   if(!mat){ $('k-res').classList.add('hide'); $('k-empty').classList.remove('hide'); return; }
   const ano=+$('k-ano').value, turma=$('k-turma').value;
   const irmas=irmasDaSerie(turma);
-  const {data:reds}=await sb.from('redacoes').select('id,rotulo,data,banca,tipo,etapa,turma,penalidade').eq('ano',ano).in('turma',irmas.length?irmas:[turma]).neq('banca','Atividade');
+  const {data:reds}=await sb.from('redacoes').select('id,rotulo,data,banca,tipo,etapa,turma,penalidade,eixo_tematico').eq('ano',ano).in('turma',irmas.length?irmas:[turma]).neq('banca','Atividade');
   const redById={}; (reds||[]).forEach(r=>redById[r.id]=r);
   const ordem=ordemRotulo(turma);
   const porRotulo={}; const rotDeRed={};
@@ -1917,7 +1947,7 @@ async function consAluno(){
 
   compBars('k-comp', compSoma.map((s,k)=> compCnt[k] ? +(s/compCnt[k]).toFixed(1) : null));
 
-  let h=`<thead><tr><th>Redação</th><th>Turma</th><th>Data</th><th>Banca</th><th>Etapa</th><th>Frequência</th><th class="num">Nota</th><th>Detalhe</th></tr></thead><tbody>`;
+  let h=`<thead><tr><th>Redação</th><th>Turma</th><th>Data</th><th>Banca</th><th>Eixo</th><th>Etapa</th><th>Frequência</th><th class="num">Nota</th><th>Detalhe</th></tr></thead><tbody>`;
   rows.forEach(({rot,r,l,nota,lTurma,red})=>{
     const penTxt=(red&&red.tipo==='comum'&&red.penalidade&&l&&l.nota_final!=null&&!l.zero_direto)?` · penalidade −${fmtN1(red.penalidade)}`:'';
     h+=`<tr>
@@ -1925,6 +1955,7 @@ async function consAluno(){
       <td>${lTurma?esc(TURMA_NOME[lTurma]||lTurma):'—'}</td>
       <td>${dataBR(r.data)}</td>
       <td><span class="red-chip">${r.banca}</span></td>
+      <td>${r.eixo_tematico?eixoChip(r.eixo_tematico):'—'}</td>
       <td>${r.etapa?r.etapa+'ª':'—'}</td>
       <td>${freqLabel(l)}${r.tipo==='prova'?' · prova':''}</td>
       <td class="num">${nota==null?'<span class="pill f-na">—</span>':pill(nota)}</td>
@@ -1969,7 +2000,7 @@ async function consRedacao(){
   const media=cnt?soma/cnt:null;
 
   $('q-titulo').textContent=`${r.rotulo} · ${TURMA_NOME[r.turma]||r.turma}`;
-  $('q-sub').innerHTML=`${dataBR(r.data)} · <span class="red-chip">${r.banca}</span> · ${r.tipo==='prova'?'Prova':'Comum'}${r.etapa?' · '+r.etapa+'ª etapa':''}${(r.tipo==='comum'&&r.penalidade)?` · <span style="color:var(--danger)">penalidade −${fmtN1(r.penalidade)}${r.penalidade_motivo?' ('+esc(r.penalidade_motivo)+')':''}</span>`:''}`;
+  $('q-sub').innerHTML=`${dataBR(r.data)} · <span class="red-chip">${r.banca}</span> · ${r.tipo==='prova'?'Prova':'Comum'}${r.etapa?' · '+r.etapa+'ª etapa':''}${(r.tipo==='comum'&&r.penalidade)?` · <span style="color:var(--danger)">penalidade −${fmtN1(r.penalidade)}${r.penalidade_motivo?' ('+esc(r.penalidade_motivo)+')':''}</span>`:''}${r.eixo_tematico?' · '+eixoChip(r.eixo_tematico):''}`;
   $('q-metrics').innerHTML=metricsHTML([
     {n:media==null?'—':fmtN1(media), l:'Média da turma'},
     {n:cnt, l:'Corrigidas'},
@@ -2006,6 +2037,7 @@ async function consBoletim(){
   const msg=$('b-msg'); msg.className='msg'; msg.textContent='';
   const {data:reds}=await sb.from('redacoes').select('id,rotulo,data,banca,tipo,penalidade,penalidade_motivo').eq('ano',ano).eq('turma',turma).eq('etapa',etapa).neq('banca','Atividade').order('data').order('id');
   if(!reds||!reds.length){ $('b-res').classList.add('hide'); $('b-empty').classList.remove('hide'); $('b-csv').classList.add('hide'); return; }
+  reds.sort((a,b)=>{ const rk=r=>r.rotulo.startsWith('AVP')?0:r.rotulo.startsWith('AVB')?1:2; return rk(a)-rk(b); });
   const {data:alunosRaw}=await sb.from('matriculas_ano').select('matricula,grupo,horario').eq('ano',ano).eq('turma',turma).eq('ativo',true);
   const alunos=(alunosRaw||[]).slice().sort((a,b)=>{ const na=nomeDe(a.matricula)||a.matricula, nb=nomeDe(b.matricula)||b.matricula; return na.localeCompare(nb,'pt-BR',{sensitivity:'base'}); });
   const ids=reds.map(r=>r.id);
@@ -2014,34 +2046,48 @@ async function consBoletim(){
   const redById={}; reds.forEach(r=>redById[r.id]=r);
 
   // cabeçalho
+  const eh3a = serieDe(turma)==='3';
   let head=`<thead><tr><th class="stick">Matrícula</th>`;
+  if(eh3a) head+=`<th title="2ª maior nota da etapa">N1</th><th title="3ª maior nota da etapa">N3</th><th title="1ª maior nota da etapa">N2</th><th class="med" title="(N1+N3+N2+N2)/4, como no sistema oficial">Média oficial</th>`;
   reds.forEach(r=>{ const pz=(r.tipo==='comum'&&r.penalidade)?' *':''; head+=`<th title="${esc(dataBR(r.data))} · ${r.banca}${pz?' · penalidade −'+fmtN1(r.penalidade):''}">${esc(r.rotulo)}${pz}</th>`; });
   head+=`<th class="med">Média</th></tr></thead>`;
 
   // linhas
   const colSoma=reds.map(()=>0), colCnt=reds.map(()=>0);
   let geralSoma=0, geralCnt=0;
-  const csv=[['Matrícula','Grupo', ...reds.map(r=>r.rotulo), 'Média da etapa']];
+  const csv=[['Matrícula','Nome', ...(eh3a?['N1','N3','N2','Média oficial']:[]), 'Grupo', ...reds.map(r=>r.rotulo), 'Média da etapa']];
   let body='<tbody>';
   (alunos||[]).forEach(a=>{
-    let linSoma=0, linCnt=0; let tds='';
-    const csvRow=[a.matricula, a.grupo];
+    let linSoma=0, linCnt=0; let tds=''; const notasAluno=[];
+    const csvRow=[a.matricula, nomeCurto(nomeDe(a.matricula),2)||''];
     reds.forEach((r,j)=>{
       const nv=notaEfetiva(r, cel[a.matricula+'|'+r.id]);
-      if(nv!=null){ tds+=`<td>${pill(nv)}</td>`; linSoma+=nv; linCnt++; colSoma[j]+=nv; colCnt[j]++; csvRow.push(fmtN(nv)); }
-      else { tds+=`<td><span class="pill f-na">—</span></td>`; csvRow.push(''); }
+      if(nv!=null){ tds+=`<td>${pill(nv)}</td>`; linSoma+=nv; linCnt++; colSoma[j]+=nv; colCnt[j]++; notasAluno.push(nv); }
+      else { tds+=`<td><span class="pill f-na">—</span></td>`; }
     });
     const med=linCnt?linSoma/linCnt:null;
     if(med!=null){ geralSoma+=med; geralCnt++; }
+    let tdsExtra='';
+    if(eh3a){
+      const H=notasAluno.slice().sort((x,y)=>y-x);
+      const H1=H[0]!=null?H[0]:null, H2=H[1]!=null?H[1]:null, H3=H[2]!=null?H[2]:null;
+      const N1=H2, N2=H1, N3=H3;
+      const medOf=(N1!=null&&N2!=null&&N3!=null)?(N1+N3+N2+N2)/4:null;
+      tdsExtra=`<td>${N1==null?'<span class="pill f-na">—</span>':pill(N1)}</td><td>${N3==null?'<span class="pill f-na">—</span>':pill(N3)}</td><td>${N2==null?'<span class="pill f-na">—</span>':pill(N2)}</td><td class="med">${fmtN(medOf)}</td>`;
+      csvRow.push(N1==null?'':fmtN(N1), N3==null?'':fmtN(N3), N2==null?'':fmtN(N2), medOf==null?'':fmtN(medOf));
+    }
+    csvRow.push(a.grupo);
+    reds.forEach((r,j)=>{ const nv=notaEfetiva(r, cel[a.matricula+'|'+r.id]); csvRow.push(nv==null?'':fmtN(nv)); });
     csvRow.push(med==null?'':fmtN(med));
     csv.push(csvRow);
-    body+=`<tr><td class="stick mono">${matNome(a.matricula)}</td>${tds}<td class="med">${fmtN(med)}</td></tr>`;
+    body+=`<tr><td class="stick mono">${matNome(a.matricula)}</td>${tdsExtra}${tds}<td class="med">${fmtN(med)}</td></tr>`;
   });
   body+='</tbody>';
 
   // rodapé: média da turma por redação
   let foot='<tfoot><tr><td class="stick">Média da turma</td>';
-  const csvFoot=['Média da turma',''];
+  if(eh3a) foot+='<td></td><td></td><td></td><td></td>';
+  const csvFoot=['Média da turma','', ...(eh3a?['','','','']:[])];
   reds.forEach((r,j)=>{ const m=colCnt[j]?colSoma[j]/colCnt[j]:null; foot+=`<td>${fmtN1(m)}</td>`; csvFoot.push(m==null?'':fmtN(m)); });
   foot+=`<td class="med">${fmtN1(geralCnt?geralSoma/geralCnt:null)}</td></tr></tfoot>`;
   csvFoot.push(geralCnt?fmtN(geralSoma/geralCnt):'');
