@@ -976,6 +976,7 @@ function nomeDe(m){ return NOMES[m]||''; }
 function matNome(m){ const n=NOMES[m]; return n? esc(m)+' · '+esc(n) : esc(m); }
 function nomeCurto(n){ if(!n) return ''; return String(n).trim().split(/\s+/).slice(0,3).join(' '); }
 function matNomeCurto(m){ const n=NOMES[m]; return n? esc(m)+' · '+esc(nomeCurto(n)) : esc(m); }
+function ordenarAlfa(arr){ return (arr||[]).slice().sort((a,b)=>{ const na=nomeDe(a.matricula)||a.matricula, nb=nomeDe(b.matricula)||b.matricula; return na.localeCompare(nb,'pt-BR',{sensitivity:'base'}); }); }
 const DIAS_SEMANA=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
 function proximoDiaSemana(dia){
   const d=new Date(); d.setHours(0,0,0,0);
@@ -1112,7 +1113,7 @@ async function listarAlunos(){
   $('l-count').textContent=data.length+(data.length===1?' aluno':' alunos');
   $('l-empty').textContent='Nenhum aluno nesta turma.';
   $('l-empty').classList.toggle('hide',data.length>0);
-  data.forEach(a=>{
+  ordenarAlfa(data).forEach(a=>{
     const d=document.createElement('div'); d.className='item clic';
     d.innerHTML=`<div class="av">${a.matricula.slice(-3)}</div>
       <div class="info"><div class="m">${matNomeCurto(a.matricula)}</div>
@@ -1856,7 +1857,7 @@ function consGrupo(g){
 async function consCarregarAlunos(){
   const ano=+$('k-ano').value, turma=$('k-turma').value;
   const {data}=await sb.from('matriculas_ano').select('matricula,grupo,horario,ativo').eq('ano',ano).eq('turma',turma).order('horario');
-  $('k-aluno').innerHTML='<option value="">Selecione o aluno…</option>'+(data||[]).map(a=>`<option value="${a.matricula}">${matNomeCurto(a.matricula)} · Grupo ${a.grupo}${a.ativo?'':' · saiu'}</option>`).join('');
+  $('k-aluno').innerHTML='<option value="">Selecione o aluno…</option>'+ordenarAlfa(data).map(a=>`<option value="${a.matricula}">${matNomeCurto(a.matricula)} · Grupo ${a.grupo}${a.ativo?'':' · saiu'}</option>`).join('');
   $('k-res').classList.add('hide'); $('k-empty').classList.remove('hide');
 }
 async function consAluno(){
@@ -1947,7 +1948,8 @@ async function consRedacao(){
   const id=+$('q-red').value;
   if(!id){ $('q-res').classList.add('hide'); $('q-empty').classList.remove('hide'); return; }
   const {data:r}=await sb.from('redacoes').select('*').eq('id',id).single();
-  const {data:alunos}=await sb.from('matriculas_ano').select('matricula,grupo,horario').eq('ano',r.ano).eq('turma',r.turma).eq('ativo',true).order('horario');
+  const {data:alunosRaw}=await sb.from('matriculas_ano').select('matricula,grupo,horario').eq('ano',r.ano).eq('turma',r.turma).eq('ativo',true);
+  const alunos=ordenarAlfa(alunosRaw);
   const {data:lancs}=await sb.from('lancamentos').select('*').eq('redacao_id',id);
   const porMat={}; (lancs||[]).forEach(l=>porMat[l.matricula]=l);
 
@@ -2004,7 +2006,8 @@ async function consBoletim(){
   const msg=$('b-msg'); msg.className='msg'; msg.textContent='';
   const {data:reds}=await sb.from('redacoes').select('id,rotulo,data,banca,tipo,penalidade,penalidade_motivo').eq('ano',ano).eq('turma',turma).eq('etapa',etapa).neq('banca','Atividade').order('data').order('id');
   if(!reds||!reds.length){ $('b-res').classList.add('hide'); $('b-empty').classList.remove('hide'); $('b-csv').classList.add('hide'); return; }
-  const {data:alunos}=await sb.from('matriculas_ano').select('matricula,grupo,horario').eq('ano',ano).eq('turma',turma).eq('ativo',true).order('horario');
+  const {data:alunosRaw}=await sb.from('matriculas_ano').select('matricula,grupo,horario').eq('ano',ano).eq('turma',turma).eq('ativo',true);
+  const alunos=(alunosRaw||[]).slice().sort((a,b)=>{ const na=nomeDe(a.matricula)||a.matricula, nb=nomeDe(b.matricula)||b.matricula; return na.localeCompare(nb,'pt-BR',{sensitivity:'base'}); });
   const ids=reds.map(r=>r.id);
   const {data:lancs}=await sb.from('lancamentos').select('redacao_id,matricula,nota_final,zero_direto').in('redacao_id',ids);
   const cel={}; (lancs||[]).forEach(l=>{ cel[l.matricula+'|'+l.redacao_id]=l; });
@@ -2129,7 +2132,7 @@ async function imprimirRoster(comDias){
 
 // ---------- LOTE: checklists ----------
 function renderChk(elId, alunos, prefix, countId, marcado){
-  $(elId).innerHTML=alunos.map(a=>`<label><input type="checkbox" class="${prefix}-chk" value="${a.matricula}" ${marcado?'checked':''}> <span class="mono">${a.matricula}</span> <span class="hint" style="margin:0">Grupo ${a.grupo} · ${(a.horario||'').slice(0,5)}</span></label>`).join('');
+  $(elId).innerHTML=alunos.map(a=>`<label><input type="checkbox" class="${prefix}-chk" value="${a.matricula}" ${marcado?'checked':''}> <span class="mono">${matNomeCurto(a.matricula)}</span> <span class="hint" style="margin:0">Grupo ${a.grupo} · ${(a.horario||'').slice(0,5)}</span></label>`).join('');
   chkCount(elId,countId,prefix);
   $(elId).querySelectorAll('.'+prefix+'-chk').forEach(c=>c.onchange=()=>chkCount(elId,countId,prefix));
 }
@@ -2141,8 +2144,8 @@ function chkTodos(elId,allId,countId){ const on=$(allId).checked; $(elId).queryS
 let prAlunos=[];
 async function prListar(){
   const ano=+$('pr-ano').value, turma=$('pr-turma').value; const msg=$('pr-msg'); msg.textContent='';
-  const {data}=await sb.from('matriculas_ano').select('matricula,grupo,horario').eq('ano',ano).eq('turma',turma).eq('ativo',true).order('horario');
-  prAlunos=data||[];
+  const {data}=await sb.from('matriculas_ano').select('matricula,grupo,horario').eq('ano',ano).eq('turma',turma).eq('ativo',true);
+  prAlunos=ordenarAlfa(data);
   if(!prAlunos.length){ $('pr-wrap').classList.add('hide'); msg.className='msg err'; msg.textContent='Nenhum aluno ativo nessa turma/ano.'; return; }
   renderChk('pr-lista',prAlunos,'pr','pr-count',true); $('pr-all').checked=true;
   $('pr-wrap').classList.remove('hide');
@@ -2170,8 +2173,8 @@ async function prExec(){
 let exAlunos=[];
 async function exListar(){
   const ano=+$('ex-ano').value, turma=$('ex-turma').value; const msg=$('ex-msg'); msg.textContent='';
-  const {data}=await sb.from('matriculas_ano').select('id,matricula,grupo,horario').eq('ano',ano).eq('turma',turma).eq('ativo',true).order('horario');
-  exAlunos=data||[];
+  const {data}=await sb.from('matriculas_ano').select('id,matricula,grupo,horario').eq('ano',ano).eq('turma',turma).eq('ativo',true);
+  exAlunos=ordenarAlfa(data);
   if(!exAlunos.length){ $('ex-wrap').classList.add('hide'); msg.className='msg err'; msg.textContent='Nenhum aluno ativo nessa turma/ano.'; return; }
   renderChk('ex-lista',exAlunos,'ex','ex-count',false); $('ex-all').checked=false; $('ex-data').value=hojeISO();
   $('ex-wrap').classList.remove('hide');
@@ -2674,7 +2677,8 @@ async function consFrequencia(){
   const id=+$('fq-red').value, grupo=+$('fq-grupo').value;
   if(!id){ $('fq-res').classList.add('hide'); $('fq-empty').classList.remove('hide'); return; }
   const {data:r}=await sb.from('redacoes').select('*').eq('id',id).single();
-  const {data:alunos}=await sb.from('matriculas_ano').select('matricula,horario').eq('ano',r.ano).eq('turma',r.turma).eq('grupo',grupo).eq('ativo',true).order('horario');
+  const {data:alunosRaw}=await sb.from('matriculas_ano').select('matricula,horario').eq('ano',r.ano).eq('turma',r.turma).eq('grupo',grupo).eq('ativo',true);
+  const alunos=ordenarAlfa(alunosRaw);
   const {data:lancs}=await sb.from('lancamentos').select('matricula,frequencia,avaliacao').eq('redacao_id',id);
   const fmap={},avmap={}; (lancs||[]).forEach(l=>{fmap[l.matricula]=l.frequencia; avmap[l.matricula]=l.avaliacao;});
   const dataGrupo = grupo===1 ? (r.data_g1||r.data) : (r.data_g2||r.data);
@@ -2727,7 +2731,8 @@ async function consFreqEtapa(){
   $('fe-msg').textContent='';
   const {data:reds}=await sb.from('redacoes').select('id,rotulo,data').eq('ano',ano).eq('turma',turma).eq('etapa',etapa).order('data').order('id');
   if(!reds||!reds.length){ $('fe-res').classList.add('hide'); $('fe-empty').classList.remove('hide'); $('fe-print').classList.add('hide'); return; }
-  const {data:alunos}=await sb.from('matriculas_ano').select('matricula,grupo,horario').eq('ano',ano).eq('turma',turma).eq('ativo',true).order('grupo').order('horario');
+  const {data:alunosRaw}=await sb.from('matriculas_ano').select('matricula,grupo,horario').eq('ano',ano).eq('turma',turma).eq('ativo',true);
+  const alunos=ordenarAlfa(alunosRaw);
   const ids=reds.map(r=>r.id);
   const {data:lancs}=await sb.from('lancamentos').select('redacao_id,matricula,frequencia').in('redacao_id',ids);
   const cel={}; (lancs||[]).forEach(l=>cel[l.matricula+'|'+l.redacao_id]=l.frequencia);
