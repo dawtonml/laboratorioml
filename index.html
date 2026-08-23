@@ -763,6 +763,16 @@
 
     <!-- =============== SEÇÃO ADMIN (coordenação) =============== -->
     <section id="sec-admin" class="hide">
+      <div class="tabs" id="admin-tabs">
+        <button data-w="logins" class="on">Logins</button>
+        <button data-w="ano">Ano letivo</button>
+        <button data-w="corretores">Corretores e turmas</button>
+        <button data-w="turmas">Turmas</button>
+        <button data-w="lab">Dias de laboratório</button>
+        <button data-w="backup">Backup</button>
+      </div>
+
+      <div id="ap-logins">
       <div class="panel">
         <h3>Criar novo login</h3>
         <p class="hint">Cria o acesso e já vincula o perfil. Use letras minúsculas e números no login (ex: c7). A senha pode ser vista aqui porque é um acesso compartilhado da equipe.</p>
@@ -783,6 +793,13 @@
         <span class="msg" id="ts-msg"></span>
       </div>
       <div class="panel">
+        <div class="list-head"><h3>Logins cadastrados</h3><span class="hint" id="ad-count"></span></div>
+        <div style="overflow-x:auto"><table class="tbl" id="ad-lista"></table></div>
+      </div>
+      </div>
+
+      <div id="ap-ano" class="hide">
+      <div class="panel">
         <h3>Abrir novo ano letivo</h3>
         <p class="hint">Necessário antes de promover alunos para um ano que ainda não existe. Anos atuais: <span id="an-atuais" class="mono"></span></p>
         <div class="grid2">
@@ -791,9 +808,12 @@
         </div>
         <span class="msg" id="an-msg"></span>
       </div>
+      </div>
+
+      <div id="ap-corretores" class="hide">
       <div class="panel">
         <h3>Corretores e turmas</h3>
-        <p class="hint">Defina qual corretor atende cada turma (ou grupo). Isso alimenta o resumo de pendências por corretor.</p>
+        <p class="hint">Defina qual corretor atende cada turma (ou grupo). Isso alimenta o resumo de pendências por corretor. Vale só para correção; criar redações continua liberado para qualquer turma.</p>
         <div class="grid3">
           <div><label for="vc-corretor">Corretor</label><select id="vc-corretor"></select></div>
           <div><label for="vc-turma">Turma</label><select id="vc-turma"></select></div>
@@ -802,6 +822,9 @@
         <div class="row-actions"><button class="primary" id="vc-btn">Vincular</button><span class="msg" id="vc-msg"></span></div>
         <div style="overflow-x:auto;margin-top:8px"><table class="tbl" id="vc-lista"></table></div>
       </div>
+      </div>
+
+      <div id="ap-turmas" class="hide">
       <div class="panel">
         <h3>Turmas</h3>
         <p class="hint">Adicione ou remova turmas. Só é possível remover uma turma sem alunos e sem redações ligadas a ela.</p>
@@ -813,6 +836,9 @@
         <div class="row-actions"><button class="primary" id="tz-btn">Adicionar turma</button><span class="msg" id="tz-msg"></span></div>
         <div style="overflow-x:auto;margin-top:8px"><table class="tbl" id="tz-lista"></table></div>
       </div>
+      </div>
+
+      <div id="ap-lab" class="hide">
       <div class="panel">
         <h3>Dias de laboratório</h3>
         <p class="hint">Defina o dia da semana do laboratório de cada série, por ano. Vale para as duas turmas da série; os grupos se alternam nesse mesmo dia, e as reposições caem nele também.</p>
@@ -824,14 +850,14 @@
         <div class="row-actions"><button class="primary" id="lb-btn">Salvar dias</button><span class="msg" id="lb-msg"></span></div>
         <div style="overflow-x:auto;margin-top:8px"><table class="tbl" id="lb-lista"></table></div>
       </div>
+      </div>
+
+      <div id="ap-backup" class="hide">
       <div class="panel">
         <h3>Backup dos dados</h3>
         <p class="hint">Baixa uma cópia completa (alunos, matrículas, redações e lançamentos) que fica com você. Bom fazer no fim de cada etapa.</p>
         <div class="row-actions"><button class="primary" id="bk-json">Baixar backup (JSON)</button><button id="bk-csv">Lançamentos em CSV</button><span class="msg" id="bk-msg"></span></div>
       </div>
-      <div class="panel">
-        <div class="list-head"><h3>Logins cadastrados</h3><span class="hint" id="ad-count"></span></div>
-        <div style="overflow-x:auto"><table class="tbl" id="ad-lista"></table></div>
       </div>
     </section>
 
@@ -1054,10 +1080,14 @@ async function carregarRefs(){
   ANOS=(a||[]).map(x=>x.ano);
   const optT=turmasVisiveis().map(x=>`<option value="${x.codigo}">${x.nome}</option>`).join('');
   const optA=ANOS.map(x=>`<option value="${x}">${x}</option>`).join('');
-  ['c-turma','r-turma','x-turma','k-turma','q-turma','b-turma','ea-turma','h-turma','pr-turma','pr-dturma','ex-turma','hh-turma','cc-turma','pd-turma','vc-turma','fq-turma','im-turma','fe-turma','fc-turma','ce-turma'].forEach(id=>$(id).innerHTML=optT);
+  const optTTodas=TURMAS.map(x=>`<option value="${x.codigo}">${x.nome}</option>`).join('');
+  ['c-turma','x-turma','k-turma','q-turma','b-turma','ea-turma','h-turma','pr-turma','pr-dturma','ex-turma','hh-turma','cc-turma','pd-turma','vc-turma','fq-turma','im-turma','fe-turma','fc-turma','ce-turma'].forEach(id=>$(id).innerHTML=optT);
   ['c-ano','l-ano','r-ano','rl-ano','x-ano','k-ano','q-ano','b-ano','h-ano','pr-ano','pr-dano','ex-ano','hh-ano','cc-ano','pd-ano','fq-ano','im-ano','fe-ano','lb-ano','rm-ano','fc-ano','ce-ano'].forEach(id=>$(id).innerHTML=optA);
   $('l-turma').innerHTML='<option value="">Selecione a turma…</option>'+optT;
-  $('rl-turma').innerHTML='<option value="">Selecione a turma…</option>'+optT;
+  // Criar/editar/consultar redações: todas as turmas, mesmo fora do escopo de correção
+  // (criar e agendar redações é atividade de professor, não só de corretor; a criação em massa já era assim)
+  $('r-turma').innerHTML=optTTodas;
+  $('rl-turma').innerHTML='<option value="">Selecione a turma…</option>'+optTTodas;
   try{ const {data:ld}=await sb.from('laboratorio_dias').select('*'); LAB={}; (ld||[]).forEach(x=>LAB[x.ano+'|'+x.serie]={dia:x.dia}); }catch(e){ LAB={}; }
   try{ const {data:nm}=await sb.from('matriculas_ano').select('matricula,nome'); NOMES={}; (nm||[]).forEach(x=>{ if(x.nome) NOMES[x.matricula]=x.nome; }); }catch(e){ NOMES={}; }
   $('r-data-g1').value=hojeISO(); $('r-data-g2').value=hojeISO();
@@ -2448,6 +2478,11 @@ async function adminInvoke(payload){
     return { data };
   }catch(e){ return { erro: String(e) }; }
 }
+const ADMIN_PAINEIS=['logins','ano','corretores','turmas','lab','backup'];
+function adminTab(w){
+  ADMIN_PAINEIS.forEach(k=>{ $('ap-'+k).classList.toggle('hide', k!==w); });
+  document.querySelectorAll('#admin-tabs button').forEach(b=>b.classList.toggle('on', b.dataset.w===w));
+}
 async function adminCarregar(){
   $('an-atuais').textContent = ANOS.join(', ');
   $('ad-count').textContent = 'carregando…';
@@ -3020,6 +3055,7 @@ $('k-pdf').onclick=gerarBoletimAluno;
 $('bk-json').onclick=baixarBackup; $('bk-csv').onclick=baixarLancCSV;
 $('vc-btn').onclick=criarVinculo;
 $('tz-btn').onclick=adicionarTurma;
+document.querySelectorAll('#admin-tabs button').forEach(b=>b.onclick=()=>adminTab(b.dataset.w));
 $('lb-btn').onclick=salvarLab; $('lb-ano').onchange=preencherLabForm; $('lb-serie').onchange=preencherLabForm; $('er-data-g1').onchange=avisoDatasEdit; $('er-data-g2').onchange=avisoDatasEdit; $('er-tipo').onchange=togglePenRowEdit; $('er-banca').onchange=togglePenRowEdit;
 $('er-rotulo').onchange=()=>{ const rr=$('er-rotulo').value; if(rr==='AVP'||rr==='AVB')$('er-tipo').value='prova'; togglePenRowEdit(); };
 $('h-ano').onchange=listarHorarios; $('h-turma').onchange=()=>{ montarHEtapa(); listarHorarios(); }; $('h-etapa').onchange=listarHorarios;
