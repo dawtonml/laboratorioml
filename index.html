@@ -100,6 +100,10 @@
   .item .sub{font-size:12px;color:var(--muted)}
   .item .st{font-size:11px;padding:2px 8px;border-radius:12px;white-space:nowrap}
   .st.ativo,.st.corrigida,.st.pres{background:var(--ok-soft);color:var(--brand2-ink)}
+  @media(min-width:760px){
+    #x-lista{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
+    #x-lista .item{margin-bottom:0}
+  }
   .st.inativo,.st.falta{background:var(--danger-soft);color:var(--danger)}
   .st.justif{background:var(--warn-soft);color:var(--warn)}
   .st.pend{background:var(--line);color:var(--muted)}
@@ -1510,7 +1514,7 @@ async function listarParaLancar(){
       else if(l.frequencia==='falta') st='<span class="st falta">Falta</span>';
       else if(l.frequencia==='falta_justificada') st='<span class="st justif">Falta just.</span>';
       if(redAtual.banca==='Atividade'){ if(l.avaliacao) st+=` <span class="st corrigida">${avalLabel(l.avaliacao)}</span>`; }
-      else if(l.nota_final!=null) st+=` <span class="st corrigida">Nota ${(+l.nota_final).toFixed(2).replace('.',',')}</span>`;
+      else if(l.nota_final!=null) st+=` <span class="st corrigida">Nota ${(+l.nota_final).toFixed(1).replace('.',',')}</span>`;
     }
     const d=document.createElement('div'); d.className='item clic';
     d.innerHTML=`<div class="av">${a.matricula.slice(-3)}</div>
@@ -1661,7 +1665,7 @@ function recalcular(){
   let nota=null;
   if($('md-zero').checked) nota=0;
   else if(notaAtiva()) nota=calcNota(redAtual.banca,lerCriterios());
-  $('md-nota').textContent = nota==null?'—':nota.toFixed(2).replace('.',',');
+  $('md-nota').textContent = nota==null?'—':nota.toFixed(1).replace('.',',');
   return nota;
 }
 function coletarPayloadLancamento(){
@@ -1927,7 +1931,8 @@ async function apagarRedacao(){
 // ==================================================================
 //  CONSULTAS (três visões)
 // ==================================================================
-const fmtN  = n => n==null ? '—' : (+n).toFixed(2).replace('.',',');
+const fmtN  = n => n==null ? '—' : (+n).toFixed(1).replace('.',',');
+const fmtN2 = n => n==null ? '—' : (+n).toFixed(2).replace('.',',');
 const fmtN1 = n => n==null ? '—' : (+n).toFixed(1).replace('.',',');
 const dataBR = d => d ? d.split('-').reverse().join('/') : '';
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -2225,14 +2230,14 @@ async function consBoletim(){
   // cabeçalho
   const eh3a = serieDe(turma)==='3';
   let head=`<thead><tr><th class="stick">Matrícula</th>`;
-  if(eh3a) head+=`<th title="2ª maior nota da etapa">N1</th><th title="3ª maior nota da etapa">N3</th><th title="1ª maior nota da etapa">N2</th><th class="med" title="(N1+N3+N2+N2)/4, como no sistema oficial">Média oficial</th>`;
+  if(eh3a) head+=`<th title="2ª maior nota da etapa">N1</th><th title="3ª maior nota da etapa">N3</th><th title="1ª maior nota da etapa">N2</th><th class="med" title="Média da Etapa: (N1+N3+N2+N2)/4, como no sistema oficial">ME</th>`;
   reds.forEach(r=>{ const pz=(r.tipo==='comum'&&r.penalidade)?' *':''; head+=`<th title="${esc(dataBR(r.data))} · ${r.banca}${pz?' · penalidade −'+fmtN1(r.penalidade):''}">${esc(r.rotulo)}${pz}</th>`; });
-  head+=`<th class="med">Média</th><th class="num" title="Faltas não justificadas na etapa">Faltas</th></tr></thead>`;
+  head+=`<th class="med" title="Média Geral da etapa">MG</th><th class="num" title="Faltas não justificadas na etapa">F</th></tr></thead>`;
 
   // linhas
   const colSoma=reds.map(()=>0), colCnt=reds.map(()=>0);
   let geralSoma=0, geralCnt=0, geralFaltas=0;
-  const csv=[['Matrícula','Nome', ...(eh3a?['N1','N3','N2','Média oficial']:[]), 'Grupo', ...reds.map(r=>r.rotulo), 'Média da etapa', 'Faltas não justificadas']];
+  const csv=[['Matrícula','Nome', ...(eh3a?['N1','N3','N2','ME']:[]), 'Grupo', ...reds.map(r=>r.rotulo), 'MG', 'F']];
   let body='<tbody>';
   (alunos||[]).forEach(a=>{
     let linSoma=0, linCnt=0; let tds=''; const notasAluno=[]; let faltasAluno=0;
@@ -2297,7 +2302,7 @@ let boletimImpressao=null;
 function imprimirBoletimEtapa(){
   if(!boletimImpressao) return;
   let corpo='<style>@page{size:landscape}.b-print-tbl{font-size:10px}.b-print-tbl th,.b-print-tbl td{padding:4px 6px}</style>';
-  if(boletimImpressao.eh3a) corpo+='<p class="sub-note">N1, N3 e N2 são as notas na ordem de digitação do sistema oficial (2ª maior, 3ª maior e 1ª maior nota da etapa). Média oficial = (N1+N3+N2+N2)/4.</p>';
+  if(boletimImpressao.eh3a) corpo+='<p class="sub-note">N1, N3 e N2 são as notas na ordem de digitação do sistema oficial (2ª maior, 3ª maior e 1ª maior nota da etapa). ME (Média da Etapa) = (N1+N3+N2+N2)/4. MG = Média Geral. F = faltas não justificadas.</p>';
   corpo+=`<table class="b-print-tbl">${boletimImpressao.tabela}</table>`;
   if(boletimImpressao.penalTxt) corpo+=`<p class="sub-note" style="margin-top:12px">${boletimImpressao.penalTxt}</p>`;
   abrirImpressao(boletimImpressao.titulo, boletimImpressao.sub, corpo);
