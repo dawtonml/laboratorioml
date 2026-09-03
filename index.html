@@ -227,6 +227,24 @@
   .rm-linha .campo-ext{display:flex;align-items:center;height:38px}
   .rm-linha .campo-ext label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink);margin:0}
   @media(max-width:900px){ .rm-linha-top{grid-template-columns:1fr 1fr}.rm-linha-bottom{grid-template-columns:1fr 1fr} }
+  .crit-est-btn{position:relative;padding:9px 12px;border:1px solid var(--line-strong);background:var(--card);
+    color:var(--ink);border-radius:8px;font-family:'Spectral',serif;font-size:14px;cursor:pointer;font-weight:600;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:64px;height:68px;box-sizing:border-box}
+  .crit-est-btn .cod{font-size:14px}
+  .crit-est-btn .pts{font-size:11px;color:var(--muted);font-family:'Inter',sans-serif;font-weight:500}
+  .crit-est-btn.on{background:var(--brand2-soft);border-color:var(--brand2);color:var(--brand2-ink)}
+  .crit-est-btn.on .pts{color:var(--brand2-ink)}
+  .crit-frame{border:1px solid var(--line-strong);background:var(--card);border-radius:8px;
+    padding:8px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-width:64px;height:68px;box-sizing:border-box}
+  .crit-frame .cod{font-family:'Spectral',serif;font-size:14px;font-weight:600;color:var(--ink)}
+  .crit-mini-group{display:flex;gap:4px}
+  .crit-mini{padding:6px 8px;border:1px solid var(--line-strong);background:var(--paper);color:var(--muted);
+    border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;min-width:32px}
+  .crit-mini.on{background:var(--brand2);border-color:var(--brand2);color:#fff}
+  .crit-mini-total{border-style:dashed}
+  .crit-block{margin-bottom:14px}
+  .crit-block-tit{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px}
+  .crit-row-blocos{display:flex;flex-wrap:wrap;gap:8px}
 </style>
 </head>
 <body>
@@ -401,7 +419,7 @@
           <div><label for="r-turma">Turma</label><select id="r-turma"></select></div>
           <div><label for="r-rotulo">Redação</label><select id="r-rotulo"></select></div>
           <div><label for="r-banca">Banca</label>
-            <select id="r-banca"><option value="ENEM">ENEM</option><option value="UECE">UECE</option><option value="UNIFOR">UNIFOR</option><option value="Atividade">Atividade</option></select></div>
+            <select id="r-banca"><option value="ENEM">ENEM</option><option value="UECE">UECE</option><option value="UNIFOR">UNIFOR</option><option value="Estrutura">Estrutura</option><option value="Atividade">Atividade</option></select></div>
           <div><label for="r-tipo">Tipo</label>
             <select id="r-tipo"><option value="comum">Comum</option><option value="prova">Prova</option></select></div>
         </div>
@@ -939,6 +957,7 @@
       <div id="md-criterios" style="margin-top:12px"></div>
       <div class="nota-box"><span class="hint" style="margin:0">Nota final (0 a 10)</span>
         <span class="v" id="md-nota">—</span></div>
+      <div class="hint hide" id="md-nota-real" style="margin-top:2px"></div>
       <div class="hint hide" id="md-penal" style="margin-top:6px;color:var(--danger)"></div>
     </div>
 
@@ -995,7 +1014,7 @@
     <div class="grid3">
       <div><label for="er-rotulo">Rótulo</label><select id="er-rotulo"></select></div>
       <div><label for="er-banca">Banca</label>
-        <select id="er-banca"><option value="ENEM">ENEM</option><option value="UECE">UECE</option><option value="UNIFOR">UNIFOR</option><option value="Atividade">Atividade</option></select></div>
+        <select id="er-banca"><option value="ENEM">ENEM</option><option value="UECE">UECE</option><option value="UNIFOR">UNIFOR</option><option value="Estrutura">Estrutura</option><option value="Atividade">Atividade</option></select></div>
       <div><label for="er-tipo">Tipo</label>
         <select id="er-tipo"><option value="comum">Comum</option><option value="prova">Prova</option></select></div>
     </div>
@@ -1333,7 +1352,7 @@ function addRmRow(){
   bloco.innerHTML=`
     <div class="rm-linha-top">
       <div><label>Rótulo</label><select class="rm-rot">${rots.map(x=>`<option>${x}</option>`).join('')}</select></div>
-      <div><label>Banca</label><select class="rm-banca"><option>ENEM</option><option>UECE</option><option>UNIFOR</option><option>Atividade</option></select></div>
+      <div><label>Banca</label><select class="rm-banca"><option>ENEM</option><option>UECE</option><option>UNIFOR</option><option>Estrutura</option><option>Atividade</option></select></div>
       <div><label>Tipo</label><select class="rm-tipo"><option value="comum">Comum</option><option value="prova">Prova</option></select></div>
       <div><label class="rm-g1-label">Correção G1</label><input class="rm-g1" type="date"></div>
       <div class="rm-g2-wrap"><label>Correção G2</label><input class="rm-g2" type="date"></div>
@@ -1591,6 +1610,96 @@ function setFreq(f){
 }
 function freqAtual(){ const b=document.querySelector('#md-freq button.on'); return b?b.dataset.f:'presente'; }
 
+const CRITERIOS_ESTRUTURA = [
+  {c:'1.1', p:0.5, b:1, tipo:'bin', d:'Apresentar repertório de introdução diretamente ligado aos termos-chave da frase temática'},
+  {c:'1.2', p:0.5, b:1, tipo:'bin', d:'[Entretanto (oposição) / Analogamente (semelhança) / Nesse sentido (continuidade)] Relacionar o repertório de introdução aos termos-chave da frase temática'},
+  {c:'1.3', p:1.0, b:1, tipo:'meio', d:'[Assim (continuidade ou conclusão) / Desse modo (conclusão) / Em virtude disso (conclusão)] Apresentar os dois pontos de argumentação na ordem em que serão desenvolvidos'},
+  {c:'2.1', p:0.5, b:2, tipo:'bin', d:'Conectivo externo [Nesse contexto / Sob esse viés / Nessa perspectiva] + Tópico frasal (retomada do Argumento 1/Tese 1 articulada à frase temática)'},
+  {c:'2.2', p:1.0, b:2, tipo:'meio', d:'[Diante disso / À vista disso / Sob essa ótica] Apresentar repertório de oposição, confirmação, exemplificação ou comparação pertinente ao tema para o Argumento 1'},
+  {c:'2.3', p:1.0, b:2, tipo:'meio', d:'[Dessa maneira / Nessa lógica / Dessa forma] Relacionar o repertório (com retomada) ao argumento, ao tema e à realidade brasileira (por meio de exemplos concretos)'},
+  {c:'2.4', p:0.5, b:2, tipo:'bin', d:'[Nesse aspecto / Destarte / Dessarte / Mediante a] Reforçar a relação da frase anterior (que consequência ela gera?) ou Reforçar a necessidade de intervenção'},
+  {c:'3.1', p:0.5, b:3, tipo:'bin', d:'Conectivo externo [Ademais / Além disso] + Tópico frasal (retomada do Argumento 2/Tese 2 articulada à frase temática)'},
+  {c:'3.2', p:1.0, b:3, tipo:'meio', d:'[Acerca disso / Nesse cenário / Ante o exposto] Apresentar repertório de oposição, confirmação, exemplificação ou comparação pertinente ao tema para o Argumento 2'},
+  {c:'3.3', p:1.0, b:3, tipo:'meio', d:'[Por conseguinte / Frente a isso / Fora da ficção / Em contrapartida] Relacionar o repertório (com retomada) ao argumento, ao tema e à realidade brasileira (com exemplos concretos)'},
+  {c:'3.4', p:0.5, b:3, tipo:'bin', d:'[Sob essa perspectiva / Sendo assim / Posto isso / A partir disso] Reforçar a relação da frase anterior (que consequência ela gera?) ou Reforçar a necessidade de intervenção'},
+  {c:'4.1', p:0.25, b:4, tipo:'bin', d:'Conectivo externo (Portanto) + tópico frasal (retomada dos dois argumentos articulados à frase temática)'},
+  {c:'4.2', p:1.2, b:4, tipo:'partes', partes:[
+      {k:'a', v:0.3, d:'Agente'},
+      {k:'b', v:0.3, d:'Detalhamento (explicação, exemplificação ou justificativa do termo anterior)'},
+      {k:'c', v:0.3, d:'Ação que intervém nos dois argumentos (verbo no infinitivo: efetivar, promover, alterar, ampliar, criar, realizar, fiscalizar etc.)'},
+      {k:'d', v:0.3, d:'Modo ("por meio de...")'}
+    ], d:'[Logo / Assim] Agente + Detalhamento + Ação que intervém nos dois argumentos + Modo'},
+  {c:'4.3', p:0.3, b:4, tipo:'bin', d:'Efeito com retomada dos dois argumentos ("Tal medida será realizada a fim de intervir / mitigar / atenuar / diminuir / etc. Argumento 1 e Argumento 2...")'},
+  {c:'4.4', p:0.25, b:4, tipo:'bin', d:'[Por conseguinte / Dessa forma / Feito isso] Retomada do repertório de introdução'}
+];
+const BLOCO_TIT_ESTRUTURA={1:'Introdução',2:'Argumento 1',3:'Argumento 2',4:'Conclusão'};
+function fmtPtsEst(n){ let s=String(n); if(!s.includes('.')) s+='.0'; return s.replace('.',','); }
+function montarBlocoEstrutura(data){
+  const est=(data&&data.estrutura)||{};
+  return [1,2,3,4].map(bl=>{
+    const itens=CRITERIOS_ESTRUTURA.filter(x=>x.b===bl).map(cr=>{
+      if(cr.tipo==='bin'){
+        const on=!!est[cr.c];
+        return `<button type="button" class="crit-est-btn${on?' on':''}" data-cod="${cr.c}" title="${esc(cr.d)}"><span class="cod">${cr.c}</span><span class="pts">${fmtPtsEst(cr.p)}</span></button>`;
+      }
+      if(cr.tipo==='meio'){
+        const atual=est[cr.c]||0;
+        return `<div class="crit-frame" title="${esc(cr.d)}"><div class="cod">${cr.c}</div><div class="crit-mini-group">
+          <button type="button" class="crit-mini${atual===0.5?' on':''}" data-cod="${cr.c}" data-v="0.5">0,5</button>
+          <button type="button" class="crit-mini${atual===1?' on':''}" data-cod="${cr.c}" data-v="1">1,0</button>
+        </div></div>`;
+      }
+      const marcadas=est[cr.c]||{};
+      return `<div class="crit-frame" title="${esc(cr.d)}"><div class="cod">${cr.c}</div><div class="crit-mini-group">
+        ${cr.partes.map(pt=>`<button type="button" class="crit-mini${marcadas[pt.k]?' on':''}" data-cod="${cr.c}" data-parte="${pt.k}" title="${esc(pt.d)}">${fmtPtsEst(pt.v)}</button>`).join('')}
+        <button type="button" class="crit-mini crit-mini-total" data-cod="${cr.c}" data-total="1" title="Marcar (ou desmarcar) todas as partes de uma vez">${fmtPtsEst(cr.p)}</button>
+      </div></div>`;
+    }).join('');
+    return `<div class="crit-block"><div class="crit-block-tit">${bl} · ${BLOCO_TIT_ESTRUTURA[bl]}</div><div class="crit-row-blocos">${itens}</div></div>`;
+  }).join('');
+}
+function sincronizarTotalParte(cod){
+  const btns=[...document.querySelectorAll(`.crit-mini[data-cod="${cod}"][data-parte]`)];
+  const total=document.querySelector(`.crit-mini-total[data-cod="${cod}"]`);
+  if(total) total.classList.toggle('on', btns.every(b=>b.classList.contains('on')));
+}
+function coletarEstruturaDOM(){
+  const est={};
+  CRITERIOS_ESTRUTURA.forEach(cr=>{
+    if(cr.tipo==='bin'){ const b=document.querySelector(`.crit-est-btn[data-cod="${cr.c}"]`); est[cr.c]=b?b.classList.contains('on'):false; }
+    else if(cr.tipo==='meio'){ const on=document.querySelector(`.crit-mini.on[data-cod="${cr.c}"]`); est[cr.c]= on? +on.dataset.v : 0; }
+    else { const partes={}; cr.partes.forEach(pt=>{ const b=document.querySelector(`.crit-mini[data-cod="${cr.c}"][data-parte="${pt.k}"]`); partes[pt.k]=b?b.classList.contains('on'):false; }); est[cr.c]=partes; }
+  });
+  return est;
+}
+function somaEstrutura(est){
+  let soma=0;
+  CRITERIOS_ESTRUTURA.forEach(cr=>{
+    if(cr.tipo==='bin'){ if(est[cr.c]) soma+=cr.p; }
+    else if(cr.tipo==='meio'){ soma+=(+est[cr.c]||0); }
+    else { const partes=est[cr.c]||{}; cr.partes.forEach(pt=>{ if(partes[pt.k]) soma+=pt.v; }); }
+  });
+  return soma;
+}
+function ligarEventosEstrutura(box){
+  box.querySelectorAll('.crit-est-btn').forEach(btn=>btn.onclick=()=>{ btn.classList.toggle('on'); recalcular(); agendarAutosave(); });
+  box.querySelectorAll('.crit-mini[data-v]').forEach(btn=>btn.onclick=()=>{
+    const cod=btn.dataset.cod, already=btn.classList.contains('on');
+    box.querySelectorAll(`.crit-mini[data-cod="${cod}"][data-v]`).forEach(x=>x.classList.remove('on'));
+    if(!already) btn.classList.add('on');
+    recalcular(); agendarAutosave();
+  });
+  box.querySelectorAll('.crit-mini[data-parte]').forEach(btn=>btn.onclick=()=>{
+    btn.classList.toggle('on'); sincronizarTotalParte(btn.dataset.cod); recalcular(); agendarAutosave();
+  });
+  box.querySelectorAll('.crit-mini-total').forEach(btn=>btn.onclick=()=>{
+    const cod=btn.dataset.cod;
+    const partes=[...box.querySelectorAll(`.crit-mini[data-cod="${cod}"][data-parte]`)];
+    const tudo=partes.every(b=>b.classList.contains('on'));
+    partes.forEach(b=>b.classList.toggle('on', !tudo));
+    sincronizarTotalParte(cod); recalcular(); agendarAutosave();
+  });
+}
 function montarCriterios(data){
   const box=$('md-criterios'); const b=redAtual.banca;
   if(b==='ENEM'){
@@ -1610,6 +1719,9 @@ function montarCriterios(data){
       <div><label for="ue-ce">Erros CE (−0,5)</label><input id="ue-ce" class="crit" type="number" min="0" value="${data&&data.uece_ce!=null?data.uece_ce:0}"></div>
       <div><label for="ue-lne">LNE (−2,5)</label><input id="ue-lne" class="crit" type="number" min="0" value="${data&&data.uece_lne!=null?data.uece_lne:0}"></div>
     </div>`;
+  } else if(b==='Estrutura'){
+    box.innerHTML=montarBlocoEstrutura(data);
+    ligarEventosEstrutura(box);
   } else {
     box.innerHTML=`<div><label for="un-e">Quantidade de erros (cada par −10 de 200)</label>
       <input id="un-e" class="crit" type="number" min="0" value="${data&&data.unifor_erros!=null?data.unifor_erros:0}"></div>`;
@@ -1632,11 +1744,13 @@ function lerCriterios(){
   const b=redAtual.banca;
   if(b==='ENEM'){ const v={}; [1,2,3,4,5].forEach(i=>{const on=$('en-c'+i).querySelector('.crit-btn.on'); v['c'+i]= on? +on.dataset.v : null;}); return v; }
   if(b==='UECE') return {t:+$('ue-t').value||0,ng:+$('ue-ng').value||0,ce:+$('ue-ce').value||0,lne:+$('ue-lne').value||0};
+  if(b==='Estrutura') return {criterios: coletarEstruturaDOM()};
   return {erros:+$('un-e').value||0};
 }
 function calcNota(b,v){
   if(b==='ENEM'){ if([1,2,3,4,5].some(i=>v['c'+i]==null)) return null; const s=[1,2,3,4,5].reduce((a,i)=>a+v['c'+i],0); return Math.min(10,+(s/100).toFixed(2)); }
   if(b==='UECE'){ const d=v.t*2.5+v.ng*1+v.ce*0.5+v.lne*2.5; return Math.min(10,+(Math.max(0,60-d)*0.167).toFixed(2)); }
+  if(b==='Estrutura'){ const soma=somaEstrutura(v.criterios); return Math.min(10,Math.round(soma*2)/2); }
   const pares=Math.floor(v.erros/2); return Math.min(10,+(Math.max(0,200-pares*10)/20).toFixed(2));
 }
 function notaAtiva(){ if($('md-zero').checked) return true; return redAtual.tipo==='prova'||freqAtual()==='presente'; }
@@ -1666,6 +1780,11 @@ function recalcular(){
   if($('md-zero').checked) nota=0;
   else if(notaAtiva()) nota=calcNota(redAtual.banca,lerCriterios());
   $('md-nota').textContent = nota==null?'—':nota.toFixed(1).replace('.',',');
+  if(redAtual&&redAtual.banca==='Estrutura'&&!$('md-zero').checked&&notaAtiva()){
+    const soma=somaEstrutura(coletarEstruturaDOM());
+    $('md-nota-real').textContent=`Nota real (antes de arredondar): ${soma.toFixed(2).replace('.',',')}`;
+    $('md-nota-real').classList.remove('hide');
+  } else { $('md-nota-real').classList.add('hide'); }
   return nota;
 }
 function coletarPayloadLancamento(){
@@ -1679,6 +1798,7 @@ function coletarPayloadLancamento(){
     zero_direto:zero, motivo_zero:zero?$('md-motivo').value:null,
     enem_c1:null,enem_c2:null,enem_c3:null,enem_c4:null,enem_c5:null,
     uece_t:null,uece_ng:null,uece_ce:null,uece_lne:null,unifor_erros:null,
+    estrutura:null,
     avaliacao:null, nota_final:nota, criado_por:perfil?perfil.login:null, atualizado_em:new Date().toISOString()
   };
   if(redAtual.banca==='Atividade'){
@@ -1690,6 +1810,7 @@ function coletarPayloadLancamento(){
   if(ativa&&!zero&&!ehAtiv){
     if(redAtual.banca==='ENEM'){payload.enem_c1=v.c1;payload.enem_c2=v.c2;payload.enem_c3=v.c3;payload.enem_c4=v.c4;payload.enem_c5=v.c5;}
     else if(redAtual.banca==='UECE'){payload.uece_t=v.t;payload.uece_ng=v.ng;payload.uece_ce=v.ce;payload.uece_lne=v.lne;}
+    else if(redAtual.banca==='Estrutura'){payload.estrutura=v.criterios;}
     else payload.unifor_erros=v.erros;
   }
   return {invalido:false, payload};
@@ -3165,7 +3286,7 @@ async function baixarLancCSV(){
     const l=await selecionarTudo('lancamentos');
     if(!l.length){ msg.className='msg err'; msg.textContent='Sem lançamentos.'; $('bk-csv').disabled=false; return; }
     const cols=Object.keys(l[0]);
-    const linhas=[cols.join(';')].concat(l.map(r=>cols.map(c=>{ let v=r[c]; if(v==null)v=''; v=String(v); return /[";\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }).join(';')));
+    const linhas=[cols.join(';')].concat(l.map(r=>cols.map(c=>{ let v=r[c]; if(v==null)v=''; v=(typeof v==='object')?JSON.stringify(v):String(v); return /[";\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }).join(';')));
     baixarArquivo('\uFEFF'+linhas.join('\r\n'), `lancamentos_${hojeISO()}.csv`, 'text/csv;charset=utf-8;');
     msg.className='msg ok'; msg.textContent=`CSV baixado (${l.length} linhas).`;
   }catch(e){ msg.className='msg err'; msg.textContent='Erro: '+(e.message||e); }
