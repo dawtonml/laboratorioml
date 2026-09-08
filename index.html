@@ -533,7 +533,8 @@
           </div>
           <div class="block" style="margin-top:12px">
             <label for="im-txt">Ou cole os dados aqui</label>
-            <textarea id="im-txt" rows="8" placeholder="20240137 160 120 80 120 100&#10;20240145 200 160 160 160 120"></textarea>
+            <textarea id="im-txt" rows="8" placeholder="20240137 160 120 80 120 100&#10;20240145 200 160 160 160 120&#10;Maria Eduarda Gonçalves 160 120 80 120 100"></textarea>
+            <div class="hint" style="margin:6px 0 0">Cada linha pode começar com a matrícula ou com o nome do aluno (como está cadastrado na turma). Só a matrícula, ou só o nome, sozinhos numa linha, marcam falta.</div>
           </div>
           <div class="row-actions"><button id="im-prever">Pré-visualizar</button><span class="msg" id="im-msg"></span></div>
           <div id="im-prev" class="hide">
@@ -784,20 +785,24 @@
       <!-- VISÃO 10: TEMAS APLICADOS -->
       <div id="cp-temas" class="hide">
         <div class="panel">
-          <div class="grid2">
+          <div class="grid3">
             <div><label for="tm-ano">Ano</label><select id="tm-ano"></select></div>
-            <div><label for="tm-serie">Série</label><select id="tm-serie"></select></div>
+            <div><label for="tm-turma">Turma</label><select id="tm-turma"><option value="">Selecione a turma…</option></select></div>
+            <div><label for="tm-etapa">Etapa</label><select id="tm-etapa"><option value="">Todas as etapas</option></select></div>
           </div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink);margin-top:10px">
+            <input type="checkbox" id="tm-serie-check"> Ver a série inteira
+          </label>
           <div class="row-actions"><button id="tm-csv" class="hide">Baixar CSV</button></div>
         </div>
         <div id="tm-res" class="hide">
           <div class="panel">
             <div class="list-head"><h3 id="tm-titulo"></h3><span class="hint" id="tm-sub"></span></div>
-            <p class="sub-note">Redações com eixo ou tema cadastrado, das duas turmas da série, em ordem de data. Ajuda a evitar repetir tema entre turmas.</p>
+            <p class="sub-note">Redações com eixo ou tema cadastrado, em ordem de data. Ajuda a evitar repetir tema entre turmas.</p>
             <div style="overflow-x:auto"><table class="tbl" id="tm-tbl"></table></div>
           </div>
         </div>
-        <div class="empty hide" id="tm-empty">Nenhuma redação com eixo ou tema cadastrado para esta série neste ano.</div>
+        <div class="empty hide" id="tm-empty">Selecione uma turma para ver os temas.</div>
       </div>
 
       <!-- VISÃO 9: CALENDÁRIO -->
@@ -1154,6 +1159,7 @@ async function carregarRefs(){
   const optA=ANOS.map(x=>`<option value="${x}">${x}</option>`).join('');
   const optTTodas=TURMAS.map(x=>`<option value="${x.codigo}">${x.nome}</option>`).join('');
   ['c-turma','x-turma','k-turma','q-turma','b-turma','ea-turma','h-turma','pr-turma','pr-dturma','ex-turma','hh-turma','cc-turma','pd-turma','vc-turma','fq-turma','im-turma','fe-turma','fc-turma','ce-turma'].forEach(id=>$(id).innerHTML=optT);
+  $('tm-turma').innerHTML='<option value="">Selecione a turma…</option>'+optT;
   ['c-ano','l-ano','r-ano','rl-ano','x-ano','k-ano','q-ano','b-ano','h-ano','pr-ano','pr-dano','ex-ano','hh-ano','cc-ano','pd-ano','fq-ano','im-ano','fe-ano','lb-ano','rm-ano','fc-ano','ce-ano','tm-ano'].forEach(id=>$(id).innerHTML=optA);
   $('l-turma').innerHTML='<option value="">Selecione a turma…</option>'+optT;
   // Criar/editar/consultar redações: todas as turmas, mesmo fora do escopo de correção
@@ -1673,15 +1679,16 @@ function coletarEstruturaDOM(){
   });
   return est;
 }
-function somaEstrutura(est){
-  let soma=0;
+function centavosEstrutura(est){
+  let c=0;
   CRITERIOS_ESTRUTURA.forEach(cr=>{
-    if(cr.tipo==='bin'){ if(est[cr.c]) soma+=cr.p; }
-    else if(cr.tipo==='meio'){ soma+=(+est[cr.c]||0); }
-    else { const partes=est[cr.c]||{}; cr.partes.forEach(pt=>{ if(partes[pt.k]) soma+=pt.v; }); }
+    if(cr.tipo==='bin'){ if(est[cr.c]) c+=Math.round(cr.p*100); }
+    else if(cr.tipo==='meio'){ c+=Math.round((+est[cr.c]||0)*100); }
+    else { const partes=est[cr.c]||{}; cr.partes.forEach(pt=>{ if(partes[pt.k]) c+=Math.round(pt.v*100); }); }
   });
-  return soma;
+  return c;
 }
+function somaEstrutura(est){ return centavosEstrutura(est)/100; }
 function ligarEventosEstrutura(box){
   box.querySelectorAll('.crit-est-btn').forEach(btn=>btn.onclick=()=>{ btn.classList.toggle('on'); recalcular(); agendarAutosave(); });
   box.querySelectorAll('.crit-mini[data-v]').forEach(btn=>btn.onclick=()=>{
@@ -1751,7 +1758,7 @@ function lerCriterios(){
 function calcNota(b,v){
   if(b==='ENEM'){ if([1,2,3,4,5].some(i=>v['c'+i]==null)) return null; const s=[1,2,3,4,5].reduce((a,i)=>a+v['c'+i],0); return Math.min(10,+(s/100).toFixed(2)); }
   if(b==='UECE'){ const d=v.t*2.5+v.ng*1+v.ce*0.5+v.lne*2.5; return Math.min(10,+(Math.max(0,60-d)*0.167).toFixed(2)); }
-  if(b==='Estrutura'){ const soma=somaEstrutura(v.criterios); return Math.min(10,Math.round(soma*2)/2); }
+  if(b==='Estrutura'){ const c=centavosEstrutura(v.criterios); const notaC=Math.min(1000,Math.round(c/50)*50); return notaC/100; }
   const pares=Math.floor(v.erros/2); return Math.min(10,+(Math.max(0,200-pares*10)/20).toFixed(2));
 }
 function notaAtiva(){ if($('md-zero').checked) return true; return redAtual.tipo==='prova'||freqAtual()==='presente'; }
@@ -1893,29 +1900,52 @@ async function preverImport(){
   const redId=+$('im-red').value;
   if(!redId){ msg.className='msg err'; msg.textContent='Selecione a redação ENEM de destino.'; return; }
   const ano=+$('im-ano').value, turma=$('im-turma').value;
-  const {data:mats}=await sb.from('matriculas_ano').select('matricula').eq('ano',ano).eq('turma',turma).eq('ativo',true);
-  const matSet=new Set((mats||[]).map(m=>m.matricula));
+  const {data:alunos}=await sb.from('matriculas_ano').select('matricula,nome').eq('ano',ano).eq('turma',turma).eq('ativo',true);
+  const matSet=new Set((alunos||[]).map(a=>a.matricula));
+  const nomeParaMat={}; const nomesRepetidos=new Set();
+  (alunos||[]).forEach(a=>{ if(!a.nome) return; const n=normNome(a.nome); if(nomeParaMat[n]!=null) nomesRepetidos.add(n); nomeParaMat[n]=a.matricula; });
+  function isNumTok(x){ const n=Number(String(x).replace(',','.')); return x!=='' && !isNaN(n); }
   const linhas=$('im-txt').value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
   const rows=[];
   linhas.forEach(ln=>{
-    const c=ln.split(/[\s,;]+/).filter(Boolean);
-    if(!/^\d{3,}$/.test(c[0])) return; // ignora cabeçalho ou linha sem matrícula
-    const mat=c[0];
+    const tokens=ln.split(/[\s,;]+/).filter(Boolean);
+    if(!tokens.length) return;
+    let idStr, numTokens, viaNome=false;
+    if(/^\d{3,}$/.test(tokens[0])){
+      // identificação por matrícula (comportamento original)
+      idStr=tokens[0]; numTokens=tokens.slice(1);
+    } else {
+      // não começa com matrícula: tenta reconhecer pelo nome, olhando os números no final da linha
+      let nEnd=0;
+      for(let i=tokens.length-1;i>=0 && nEnd<5;i--){ if(isNumTok(tokens[i])) nEnd++; else break; }
+      const idTokens=tokens.slice(0, tokens.length-nEnd);
+      if(!idTokens.length) return; // linha só de números, sem identificador -> ignora
+      idStr=idTokens.join(' '); numTokens=tokens.slice(tokens.length-nEnd); viaNome=true;
+    }
     let problema=null, ajustado=false, falta=false;
     const vals=[];
-    if(c.length===1){ falta=true; }
-    else if(c.length<6){ problema='faltam competências'; }
-    else {
-      for(let i=1;i<=5;i++){
-        let n=Number(String(c[i]).replace(',','.'));
-        if(isNaN(n)){ problema='valor inválido'; break; }
-        const a=arred40(n); if(a!==n) ajustado=true; vals.push(a);
+    let mat=idStr, exibicao=idStr;
+    if(viaNome){
+      const nrm=normNome(idStr);
+      if(nomesRepetidos.has(nrm)){ problema='nome ambíguo (mais de um aluno com esse nome na turma)'; }
+      else if(nomeParaMat[nrm]==null){ problema='nome não encontrado na turma'; }
+      else { mat=nomeParaMat[nrm]; exibicao=`${idStr} (${mat})`; }
+    }
+    if(!problema){
+      if(numTokens.length===0){ falta=true; }
+      else if(numTokens.length<5){ problema='faltam competências'; }
+      else {
+        for(let i=0;i<5;i++){
+          let n=Number(String(numTokens[i]).replace(',','.'));
+          if(isNaN(n)){ problema='valor inválido'; break; }
+          const a=arred40(n); if(a!==n) ajustado=true; vals.push(a);
+        }
       }
     }
-    if(!problema && !matSet.has(mat)) problema='matrícula não é da turma';
+    if(!problema && !viaNome && !matSet.has(mat)) problema='matrícula não é da turma';
     let nota=null;
     if(!problema && !falta) nota=calcNota('ENEM',{c1:vals[0],c2:vals[1],c3:vals[2],c4:vals[3],c5:vals[4]});
-    rows.push({mat, vals, nota, problema, ajustado, falta});
+    rows.push({mat, exibicao, vals, nota, problema, ajustado, falta});
   });
   if(!rows.length){ msg.className='msg err'; msg.textContent='Nenhuma linha válida encontrada. Confira o formato.'; $('im-prev').classList.add('hide'); return; }
   importValidos=rows.filter(r=>!r.problema && !r.falta);
@@ -1928,11 +1958,11 @@ async function preverImport(){
     {n:comProblema, l:'Com problema', color: comProblema?'var(--danger)':null},
     {n:ajustados, l:'Ajustadas p/ múltiplo de 40', color: ajustados?'var(--warn)':null}
   ]);
-  let h='<thead><tr><th>Matrícula</th><th class="num">C1</th><th class="num">C2</th><th class="num">C3</th><th class="num">C4</th><th class="num">C5</th><th class="num">Nota</th><th>Situação</th></tr></thead><tbody>';
+  let h='<thead><tr><th>Aluno</th><th class="num">C1</th><th class="num">C2</th><th class="num">C3</th><th class="num">C4</th><th class="num">C5</th><th class="num">Nota</th><th>Situação</th></tr></thead><tbody>';
   rows.forEach(r=>{
     const cells = r.vals.length===5 ? r.vals.map(v=>`<td class="num">${v}</td>`).join('') : '<td colspan="5" class="det">—</td>';
     const sit = r.problema ? `<span class="pill f-lo">${esc(r.problema)}</span>` : r.falta ? `<span class="pill f-md">falta (sem nota)</span>` : (r.ajustado? '<span class="pill f-md">ok (ajustada)</span>' : '<span class="pill f-ok">ok</span>');
-    h+=`<tr><td class="mono">${esc(r.mat)}</td>${cells}<td class="num">${r.nota==null?'—':fmtN(r.nota)}</td><td>${sit}</td></tr>`;
+    h+=`<tr><td class="mono">${esc(r.exibicao)}</td>${cells}<td class="num">${r.nota==null?'—':fmtN(r.nota)}</td><td>${sit}</td></tr>`;
   });
   h+='</tbody>'; $('im-tbl').innerHTML=h;
   $('im-conf-msg').textContent=''; $('im-prev').classList.remove('hide');
@@ -2058,6 +2088,7 @@ const fmtN2 = n => n==null ? '—' : (+n).toFixed(2).replace('.',',');
 const fmtN1 = n => n==null ? '—' : (+n).toFixed(1).replace('.',',');
 const dataBR = d => d ? d.split('-').reverse().join('/') : '';
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function normNome(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim(); }
 function faixa(n){ return n==null?'f-na':(n>=7?'f-ok':(n>=5?'f-md':'f-lo')); }
 function notaEfetiva(red,l){ if(!l||l.nota_final==null) return null; let n=+l.nota_final; if(red&&red.tipo==='comum'&&!l.zero_direto&&red.penalidade){ n=Math.max(0,+(n-(+red.penalidade)).toFixed(2)); } return n; }
 function notaCor(n){ return n>=7?'var(--brand2)':(n>=5?'var(--warn)':'var(--danger)'); }
@@ -2173,7 +2204,7 @@ function consTab(which){
   if(which==='pend') setTimeout(consPendencias,0);
   if(which==='cal') setTimeout(consCalendario,0);
   if(which==='eixo') setTimeout(consEixo,0);
-  if(which==='temas') setTimeout(()=>{ montarTmSerie(); consTemas(); },0);
+  if(which==='temas') setTimeout(()=>{ montarTmEtapa(); consTemas(); },0);
   TODAS_SUBS.forEach(w=>{ const pn=$('cp-'+w); if(pn) pn.classList.toggle('hide', w!==which); });
   document.querySelectorAll('#cons-subs button').forEach(b=>b.classList.toggle('on', b.dataset.w===which));
 }
@@ -3205,13 +3236,25 @@ function imprimirCalendario(){
 
 // ---------- TEMAS APLICADOS ----------
 let temasCSV=null;
-function montarTmSerie(){ $('tm-serie').innerHTML=seriesDistintas().map(s=>`<option value="${s}">${esc(labelSerie(s))}</option>`).join(''); }
+function montarTmEtapa(){
+  const turma=$('tm-turma').value;
+  $('tm-etapa').innerHTML='<option value="">Todas as etapas</option>'+(turma?opcoesEtapa(turma):'');
+}
 async function consTemas(){
-  const ano=+$('tm-ano').value, serie=$('tm-serie').value;
-  const turmas=turmasDaSerie(serie);
-  const {data:reds}=await sb.from('redacoes').select('turma,rotulo,data,eixo_tematico,tema').eq('ano',ano).in('turma',turmas).neq('banca','Atividade');
+  const ano=+$('tm-ano').value, turma=$('tm-turma').value, etapa=$('tm-etapa').value, verSerie=$('tm-serie-check').checked;
+  if(!turma){ $('tm-res').classList.add('hide'); $('tm-csv').classList.add('hide'); $('tm-empty').textContent='Selecione uma turma para ver os temas.'; $('tm-empty').classList.remove('hide'); return; }
+  const turmas = verSerie ? turmasDaSerie(serieDe(turma)) : [turma];
+  let q=sb.from('redacoes').select('turma,rotulo,data,eixo_tematico,tema').eq('ano',ano).in('turma',turmas).neq('banca','Atividade');
+  if(etapa) q=q.eq('etapa',+etapa);
+  const {data:reds,error}=await q;
+  if(error){
+    $('tm-res').classList.add('hide'); $('tm-csv').classList.add('hide');
+    $('tm-empty').textContent='Não foi possível carregar: '+error.message+' (confira se o SQL de eixo temático e tema já foi rodado no Supabase).';
+    $('tm-empty').classList.remove('hide');
+    return;
+  }
   const linhas=(reds||[]).filter(r=>r.eixo_tematico||r.tema).sort((a,b)=> (a.data<b.data?-1:a.data>b.data?1:0));
-  if(!linhas.length){ $('tm-res').classList.add('hide'); $('tm-empty').classList.remove('hide'); $('tm-csv').classList.add('hide'); return; }
+  if(!linhas.length){ $('tm-res').classList.add('hide'); $('tm-empty').textContent='Nenhuma redação com eixo ou tema cadastrado para este filtro.'; $('tm-empty').classList.remove('hide'); $('tm-csv').classList.add('hide'); return; }
   let h='<thead><tr><th>Turma</th><th>Rótulo</th><th>Data</th><th>Eixo</th><th>Tema</th></tr></thead><tbody>';
   const csv=[['Turma','Rótulo','Data','Eixo','Tema']];
   linhas.forEach(r=>{
@@ -3219,9 +3262,11 @@ async function consTemas(){
     csv.push([TURMA_NOME[r.turma]||r.turma, r.rotulo, dataBR(r.data), r.eixo_tematico||'', r.tema||'']);
   });
   h+='</tbody>'; $('tm-tbl').innerHTML=h;
-  $('tm-titulo').textContent=`${labelSerie(serie)} · ${ano}`;
+  const nomeFiltro = verSerie ? labelSerie(serieDe(turma)) : (TURMA_NOME[turma]||turma);
+  const nomeEtapa = etapa ? ` · ${etapa}ª etapa` : '';
+  $('tm-titulo').textContent=`${nomeFiltro} · ${ano}${nomeEtapa}`;
   $('tm-sub').textContent=`${linhas.length} ${linhas.length===1?'redação':'redações'}`;
-  temasCSV={rows:csv, nome:`temas_${serie}_${ano}.csv`};
+  temasCSV={rows:csv, nome:`temas_${turma}_${ano}.csv`};
   $('tm-csv').classList.remove('hide');
   $('tm-empty').classList.add('hide'); $('tm-res').classList.remove('hide');
 }
@@ -3301,7 +3346,7 @@ $('ad-criar').onclick=criarLogin; $('ts-btn').onclick=trocarSenha; $('an-btn').o
 document.querySelectorAll('#cons-grupos button').forEach(b=>b.onclick=()=>consGrupo(b.dataset.g));
 $('fc-ano').onchange=consCalendario; $('fc-turma').onchange=()=>{ montarCalEtapa(); consCalendario(); }; $('fc-etapa').onchange=consCalendario; $('fc-print').onclick=imprimirCalendario;
 $('ce-ano').onchange=consEixo; $('ce-turma').onchange=consEixo;
-$('tm-ano').onchange=consTemas; $('tm-serie').onchange=consTemas; $('tm-csv').onclick=baixarTemasCSV;
+$('tm-ano').onchange=consTemas; $('tm-turma').onchange=()=>{ montarTmEtapa(); consTemas(); }; $('tm-etapa').onchange=consTemas; $('tm-serie-check').onchange=consTemas; $('tm-csv').onclick=baixarTemasCSV;
 $('fe-turma').onchange=atualizarEtapasFE; $('fe-gerar').onclick=consFreqEtapa; $('fe-print').onclick=imprimirFreqEtapa;
 $('cc-ano').onchange=consCompetencias; $('cc-turma').onchange=consCompetencias;
 $('pd-ano').onchange=consPendencias; $('pd-turma').onchange=consPendencias; $('pd-grupo').onchange=consPendencias;
