@@ -2173,7 +2173,7 @@ function consTab(which){
   if(which==='pend') setTimeout(consPendencias,0);
   if(which==='cal') setTimeout(consCalendario,0);
   if(which==='eixo') setTimeout(consEixo,0);
-  if(which==='temas') setTimeout(consTemas,0);
+  if(which==='temas') setTimeout(()=>{ montarTmSerie(); consTemas(); },0);
   TODAS_SUBS.forEach(w=>{ const pn=$('cp-'+w); if(pn) pn.classList.toggle('hide', w!==which); });
   document.querySelectorAll('#cons-subs button').forEach(b=>b.classList.toggle('on', b.dataset.w===which));
 }
@@ -3207,7 +3207,6 @@ function imprimirCalendario(){
 let temasCSV=null;
 function montarTmSerie(){ $('tm-serie').innerHTML=seriesDistintas().map(s=>`<option value="${s}">${esc(labelSerie(s))}</option>`).join(''); }
 async function consTemas(){
-  montarTmSerie();
   const ano=+$('tm-ano').value, serie=$('tm-serie').value;
   const turmas=turmasDaSerie(serie);
   const {data:reds}=await sb.from('redacoes').select('turma,rotulo,data,eixo_tematico,tema').eq('ano',ano).in('turma',turmas).neq('banca','Atividade');
