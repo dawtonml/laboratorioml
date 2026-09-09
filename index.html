@@ -245,20 +245,24 @@
   .crit-mini-total{border-style:dashed}
   .tm-linha-alterada{background:var(--warn-soft)}
   .tm-linha-alterada td{background:var(--warn-soft)}
-  .pl-tbl td{vertical-align:middle;padding:6px 8px}
+  .pl-tbl td{vertical-align:middle;padding:6px 6px}
   .pl-tbl th,.pl-tbl td{white-space:nowrap}
-  .pl-tbl td:first-child{min-width:100px}
-  .pl-tbl td:nth-child(6){min-width:110px}
-  .pl-tbl td:last-child{white-space:normal;min-width:160px}
-  .pl-tbl select,.pl-tbl input{width:auto;min-width:110px;padding:6px 8px;font-size:13px}
-  .pl-tbl input.pl-tema{min-width:160px}
+  .pl-tbl select,.pl-tbl input{width:auto;padding:6px 8px;font-size:13px}
+  .pl-tbl td:nth-child(1){min-width:56px}
+  .pl-tbl select.pl-grp{min-width:88px}
+  .pl-tbl select.pl-rot{min-width:64px}
+  .pl-tbl select.pl-eixo{min-width:170px}
+  .pl-tbl input.pl-tema{min-width:150px}
+  .pl-tbl td:last-child{white-space:normal;min-width:130px}
+  .pl-acao{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+  .pl-acao label{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)}
   .pl-linha-vazia td{background:#FBF6E9}
   .pl-linha-pronta td{background:var(--ok-soft)}
   .pl-linha-ajuste td{background:var(--accent-soft)}
   .pl-linha-cancelada td{background:var(--danger-soft)}
   .pl-data{font-weight:600;font-size:13px}
   .pl-data.pl-riscada{text-decoration:line-through;color:var(--muted)}
-  .pl-motivo{font-size:11px;color:var(--warn);display:block}
+  .pl-motivo{font-size:11px;color:var(--warn);display:block;white-space:normal;max-width:90px}
   .pl-btn-mini{font-size:11px;padding:3px 7px;border-radius:6px;border:1px solid var(--accent);background:var(--card);cursor:pointer;color:var(--accent-ink);white-space:nowrap;font-weight:600}
   .pl-btn-mini:hover{background:var(--accent-soft)}
   .pl-btn-mini:disabled{opacity:.4;cursor:not-allowed;border-color:var(--line-strong);color:var(--muted);background:var(--card)}
@@ -1560,6 +1564,7 @@ function prepararPlanejamento(){
 function montarPlanEtapa(){
   $('pl-etapa').innerHTML=opcoesEtapa($('pl-turma').value);
 }
+function dataCurta(iso){ const [,m,d]=iso.split('-'); return `${d}/${m}`; }
 function diasNoPeriodo(diaSemana, inicio, fim){
   const out=[]; let d=inicio, tentativas=0;
   while(diaDaData(d)!==diaSemana && d<=fim && tentativas<7){ d=addDias(d,1); tentativas++; }
@@ -1622,13 +1627,13 @@ function grpPlanCel(ln,i){
 function renderPlanTbl(){
   const turma=$('pl-turma').value;
   const rots=['',...rotulosDaTurma(turma)];
-  let h='<thead><tr><th>Data</th><th>Grupo</th><th>Rótulo</th><th>Eixo temático</th><th>Tema</th><th>Situação</th><th></th></tr></thead><tbody>';
+  let h='<thead><tr><th>Data</th><th>Grupo</th><th>Rótulo</th><th>Eixo temático</th><th>Tema</th><th></th></tr></thead><tbody>';
   planLinhas.forEach((ln,i)=>{
     const cls = ln.cancelado?'pl-linha-cancelada':ln.ajuste?'pl-linha-ajuste':(ln.rotulo?'pl-linha-pronta':'pl-linha-vazia');
     const semRotulo=!ln.rotulo;
     const podeCancelar=semRotulo && !ln.ajuste;
     const podeAjuste=semRotulo && !ln.cancelado;
-    let dataCel=`<span class="pl-data ${ln.cancelado?'pl-riscada':''}">${dataBR(ln.data)}</span>`;
+    let dataCel=`<span class="pl-data ${ln.cancelado?'pl-riscada':''}">${dataCurta(ln.data)}</span>`;
     if(ln.cancelado) dataCel+=`<span class="pl-motivo">${esc(ln.cancelado)}</span>`;
     let acaoCel;
     if(ln.cancelado){
@@ -1650,10 +1655,9 @@ function renderPlanTbl(){
       <td><select class="pl-rot" data-i="${i}" ${ln.cancelado||ln.ajuste?'disabled':''}>${rots.map(r=>`<option value="${r}" ${baseRotulo(ln.rotulo)===r?'selected':''}>${r||'—'}</option>`).join('')}</select></td>
       <td><select class="pl-eixo" data-i="${i}" ${ln.rotulo?'':'disabled'}>${optsEixo(ln.eixo)}</select></td>
       <td><input class="pl-tema" data-i="${i}" placeholder="opcional" value="${esc(ln.tema||'')}" ${ln.rotulo?'':'disabled'}></td>
-      <td>${statusPlanHTML(ln)}</td>
-      <td style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <td class="pl-acao">
         ${acaoCel}
-        <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)">
+        <label>
           <input type="checkbox" class="pl-chk-ajuste" data-i="${i}" ${ln.ajuste?'checked':''} ${podeAjuste||ln.ajuste?'':'disabled'}> ajuste
         </label>
       </td>
