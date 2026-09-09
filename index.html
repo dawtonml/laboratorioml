@@ -243,6 +243,31 @@
     border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;min-width:32px}
   .crit-mini.on{background:var(--brand2);border-color:var(--brand2);color:#fff}
   .crit-mini-total{border-style:dashed}
+  .tm-linha-alterada{background:var(--warn-soft)}
+  .tm-linha-alterada td{background:var(--warn-soft)}
+  .pl-tbl td{vertical-align:middle;padding:6px 8px}
+  .pl-tbl th,.pl-tbl td{white-space:nowrap}
+  .pl-tbl td:first-child{min-width:100px}
+  .pl-tbl td:nth-child(6){min-width:110px}
+  .pl-tbl td:last-child{white-space:normal;min-width:160px}
+  .pl-tbl select,.pl-tbl input{width:auto;min-width:110px;padding:6px 8px;font-size:13px}
+  .pl-tbl input.pl-tema{min-width:160px}
+  .pl-linha-vazia td{background:#FBF6E9}
+  .pl-linha-pronta td{background:var(--ok-soft)}
+  .pl-linha-ajuste td{background:var(--accent-soft)}
+  .pl-linha-cancelada td{background:var(--danger-soft)}
+  .pl-data{font-weight:600;font-size:13px}
+  .pl-data.pl-riscada{text-decoration:line-through;color:var(--muted)}
+  .pl-motivo{font-size:11px;color:var(--warn);display:block}
+  .pl-btn-mini{font-size:11px;padding:3px 7px;border-radius:6px;border:1px solid var(--accent);background:var(--card);cursor:pointer;color:var(--accent-ink);white-space:nowrap;font-weight:600}
+  .pl-btn-mini:hover{background:var(--accent-soft)}
+  .pl-btn-mini:disabled{opacity:.4;cursor:not-allowed;border-color:var(--line-strong);color:var(--muted);background:var(--card)}
+  .pl-btn-mini.marcado{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}
+  .pl-status{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;display:inline-block;white-space:nowrap}
+  .pl-status.ok{background:var(--ok-soft);color:var(--brand2-ink)}
+  .pl-status.pendente{background:#FBF6E9;color:#8A6D1B}
+  .pl-status.ajuste{background:var(--accent-soft);color:var(--accent-ink)}
+  .pl-status.cancel{background:var(--danger-soft);color:var(--danger)}
   .crit-block{margin-bottom:14px}
   .crit-block-tit{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px}
   .crit-row-blocos{display:flex;flex-wrap:wrap;gap:8px}
@@ -410,14 +435,15 @@
       <div class="tabs">
         <button id="rt-uma" class="on">Criar uma</button>
         <button id="rt-massa">Criar em massa</button>
+        <button id="rt-plan">Planejamento</button>
       </div>
       <div id="rp-uma">
       <div class="panel">
         <h3>Criar redação</h3>
         <div class="grid6">
           <div><label for="r-ano">Ano letivo</label><select id="r-ano"></select></div>
-          <div><label for="r-etapa">Etapa</label><select id="r-etapa"></select></div>
           <div><label for="r-turma">Turma</label><select id="r-turma"></select></div>
+          <div><label for="r-etapa">Etapa</label><select id="r-etapa"></select></div>
           <div><label for="r-rotulo">Redação</label><select id="r-rotulo"></select></div>
           <div><label for="r-banca">Banca</label>
             <select id="r-banca"><option value="ENEM">ENEM</option><option value="UECE">UECE</option><option value="UNIFOR">UNIFOR</option><option value="Estrutura">Estrutura</option><option value="Atividade">Atividade</option></select></div>
@@ -456,6 +482,7 @@
           </div>
           <div class="hint" id="rm-turmas" style="margin-top:8px"></div>
           <div id="rm-linhas" style="margin-top:12px"></div>
+          <div class="hint hide" id="rm-datas-aviso" style="margin-top:6px;color:var(--warn)"></div>
           <div class="row-actions" style="margin-top:10px">
             <button id="rm-add">+ Adicionar linha</button>
             <button id="rm-datas">Preencher datas em sequência</button>
@@ -465,6 +492,25 @@
         </div>
       </div>
 
+      <div id="rp-plan" class="hide">
+        <div class="tabs" id="pl-series-tabs"></div>
+        <div class="panel">
+          <div class="grid4">
+            <div><label for="pl-turma">Turma</label><select id="pl-turma"></select></div>
+            <div><label for="pl-ano">Ano</label><select id="pl-ano"></select></div>
+            <div><label for="pl-etapa">Etapa</label><select id="pl-etapa"></select></div>
+            <div style="display:flex;align-items:flex-end"><button id="pl-duplicar" style="width:100%">Duplicar para outra turma</button></div>
+          </div>
+          <div class="hint" id="pl-periodo" style="margin-top:6px"></div>
+        </div>
+        <div class="panel hide" id="pl-res">
+          <div style="overflow-x:auto"><table class="tbl pl-tbl" id="pl-tbl"></table></div>
+          <div class="row-actions" style="margin-top:12px"><button class="primary" id="pl-salvar">Salvar planejamento</button><span class="msg" id="pl-msg"></span></div>
+        </div>
+        <div class="empty hide" id="pl-empty"></div>
+      </div>
+
+      <div id="rl-wrap">
       <div class="list-head"><h3>Redações criadas</h3><span class="hint" id="rl-count"></span></div>
       <div class="filters">
         <select id="rl-ano"></select>
@@ -474,6 +520,7 @@
       </div>
       <div id="rl-lista"></div>
       <div class="empty hide" id="rl-empty">Nenhuma redação neste filtro.</div>
+      </div>
     </section>
 
     <!-- =============== SEÇÃO LANÇAR =============== -->
@@ -491,8 +538,8 @@
         <h3>Escolher redação para lançar</h3>
         <div class="grid4">
           <div><label for="x-ano">Ano</label><select id="x-ano"></select></div>
-          <div><label for="x-etapa">Etapa</label><select id="x-etapa"><option value="">Todas as etapas</option></select></div>
           <div><label for="x-turma">Turma</label><select id="x-turma"></select></div>
+          <div><label for="x-etapa">Etapa</label><select id="x-etapa"><option value="">Todas as etapas</option></select></div>
           <div><label for="x-red">Redação</label><select id="x-red"><option value="">—</option></select></div>
         </div>
       </div>
@@ -798,8 +845,9 @@
         <div id="tm-res" class="hide">
           <div class="panel">
             <div class="list-head"><h3 id="tm-titulo"></h3><span class="hint" id="tm-sub"></span></div>
-            <p class="sub-note">Redações com eixo ou tema cadastrado, em ordem de data. Ajuda a evitar repetir tema entre turmas.</p>
+            <p class="sub-note">Todas as redações do filtro, em ordem de data. Edite o eixo e o tema direto na tabela (inclusive as que ainda não têm) e clique em "Salvar alterações".</p>
             <div style="overflow-x:auto"><table class="tbl" id="tm-tbl"></table></div>
+            <div class="row-actions hide" id="tm-salvar-wrap" style="margin-top:10px"><button class="primary" id="tm-salvar">Salvar alterações</button><span class="msg" id="tm-salvar-msg"></span></div>
           </div>
         </div>
         <div class="empty hide" id="tm-empty">Selecione uma turma para ver os temas.</div>
@@ -814,6 +862,16 @@
             <div><label for="fc-etapa">Etapa</label><select id="fc-etapa"></select></div>
           </div>
           <div class="row-actions"><button id="fc-print" class="hide">Imprimir calendário</button></div>
+        </div>
+        <div class="panel hide" id="fc-cancel-panel">
+          <h3>Dias sem atendimento</h3>
+          <p class="hint">Registre um dia conhecido de antemão (feriado, evento etc.), mesmo sem nenhuma redação agendada nele. Isso faz o "Preencher datas em sequência" da criação em massa pular esse dia sozinho.</p>
+          <div class="grid3">
+            <div><label for="fc-cancel-data">Data</label><input id="fc-cancel-data" type="date"></div>
+            <div><label for="fc-cancel-motivo">Motivo</label><select id="fc-cancel-motivo"><option value="">Selecione…</option></select></div>
+            <div style="display:flex;align-items:flex-end"><button class="primary" id="fc-cancel-btn" style="width:100%">Marcar</button></div>
+          </div>
+          <div id="fc-cancel-lista" style="margin-top:10px"></div>
         </div>
         <div id="fc-res" class="hide">
           <div class="panel">
@@ -873,6 +931,18 @@
         </div>
         <span class="msg" id="an-msg"></span>
       </div>
+      <div class="panel">
+        <h3>Datas das etapas</h3>
+        <p class="hint">Quando cada etapa começa e termina, por ano. Usado pela aba Planejamento (em Redações) para gerar os dias de laboratório do período certo.</p>
+        <div class="grid4">
+          <div><label for="ed-ano">Ano</label><select id="ed-ano"></select></div>
+          <div><label for="ed-etapa">Etapa</label><select id="ed-etapa"><option value="1">1ª etapa</option><option value="2">2ª etapa</option><option value="3">3ª etapa</option><option value="4">4ª etapa</option></select></div>
+          <div><label for="ed-inicio">Início</label><input id="ed-inicio" type="date"></div>
+          <div><label for="ed-fim">Fim</label><input id="ed-fim" type="date"></div>
+        </div>
+        <div class="row-actions"><button class="primary" id="ed-btn">Salvar</button><span class="msg" id="ed-msg"></span></div>
+        <div style="overflow-x:auto;margin-top:8px"><table class="tbl" id="ed-lista"></table></div>
+      </div>
       </div>
 
       <div id="ap-corretores" class="hide">
@@ -906,12 +976,15 @@
       <div id="ap-lab" class="hide">
       <div class="panel">
         <h3>Dias de laboratório</h3>
-        <p class="hint">Defina o dia da semana do laboratório de cada série, por ano. Vale para as duas turmas da série; os grupos se alternam nesse mesmo dia, e as reposições caem nele também.</p>
+        <p class="hint">Defina o dia da semana do laboratório de cada turma, por ano. Em séries com turmas em turnos diferentes (ex.: 9º ano), cada turma pode ter um dia próprio.</p>
         <div class="grid3">
           <div><label for="lb-ano">Ano</label><select id="lb-ano"></select></div>
-          <div><label for="lb-serie">Série</label><select id="lb-serie"></select></div>
+          <div><label for="lb-turma">Turma</label><select id="lb-turma"></select></div>
           <div><label for="lb-dia">Dia do laboratório</label><select id="lb-dia"></select></div>
         </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink);margin-top:10px">
+          <input type="checkbox" id="lb-aplicar-serie" checked> Aplicar o mesmo dia às outras turmas da série
+        </label>
         <div class="row-actions"><button class="primary" id="lb-btn">Salvar dias</button><span class="msg" id="lb-msg"></span></div>
         <div style="overflow-x:auto;margin-top:8px"><table class="tbl" id="lb-lista"></table></div>
       </div>
@@ -1115,6 +1188,7 @@ async function sair(){ await sb.auth.signOut(); $('app').classList.add('hide'); 
 // ---------- REFERÊNCIAS ----------
 let LAB={};
 let NOMES={};
+let ETAPAS_DATAS={};
 function nomeDe(m){ return NOMES[m]||''; }
 function matNome(m){ const n=NOMES[m]; return n? esc(m)+' · '+esc(n) : esc(m); }
 function nomeCurto(n,qtd=3){ if(!n) return ''; return String(n).trim().split(/\s+/).slice(0,qtd).join(' '); }
@@ -1128,7 +1202,7 @@ function proximoDiaSemana(dia){
 }
 function addDias(iso,n){ const [y,m,dd]=iso.split('-').map(Number); const d=new Date(y,m-1,dd); d.setDate(d.getDate()+n); const o=d.getTimezoneOffset(); return new Date(d-o*60000).toISOString().slice(0,10); }
 function diaDaData(iso){ if(!iso) return null; const [y,m,dd]=iso.split('-').map(Number); return new Date(y,m-1,dd).getDay(); }
-function labDaTurma(ano,turma){ return LAB[ano+'|'+serieDe(turma)]||null; }
+function labDaTurma(ano,turma){ return LAB[ano+'|'+turma]||null; }
 function labelSerie(serie){ const t=TURMAS.find(x=>serieDe(x.codigo)===serie); return t? t.nome.replace(/\s+[A-Za-z0-9]$/,'') : serie; }
 function seriesDistintas(){ const seen=[]; TURMAS.forEach(t=>{ const s=serieDe(t.codigo); if(!seen.includes(s)) seen.push(s); }); return seen; }
 function prefillDatasRedacao(){
@@ -1141,7 +1215,7 @@ function avisoDatasRedacao(){
   if($('r-externa')&&$('r-externa').checked) return;
   const ano=+$('r-ano').value, turma=$('r-turma').value, cfg=labDaTurma(ano,turma);
   const el=$('r-aviso'); if(!cfg||cfg.dia==null){ el.classList.add('hide'); el.textContent=''; return; }
-  const nome=labelSerie(serieDe(turma)); const av=[];
+  const nome=TURMA_NOME[turma]||turma; const av=[];
   const d1=diaDaData($('r-data-g1').value); if(d1!=null&&d1!==cfg.dia) av.push(`Grupo 1 está em ${DIAS_SEMANA[d1]}.`);
   const d2=diaDaData($('r-data-g2').value); if(d2!=null&&d2!==cfg.dia) av.push(`Grupo 2 está em ${DIAS_SEMANA[d2]}.`);
   el.textContent = av.length ? `O laboratório da ${nome} é ${DIAS_SEMANA[cfg.dia]}. ${av.join(' ')}` : '';
@@ -1152,7 +1226,8 @@ async function carregarRefs(){
   const pAnos=sb.from('anos_letivos').select('ano').order('ano',{ascending:false});
   const pLab=sb.from('laboratorio_dias').select('*').then(r=>r,e=>({data:null,error:e}));
   const pNomes=sb.from('matriculas_ano').select('matricula,nome').then(r=>r,e=>({data:null,error:e}));
-  const [{data:t},{data:a},labRes,nomesRes]=await Promise.all([pTurmas,pAnos,pLab,pNomes]);
+  const pEtapasDatas=sb.from('etapas_datas').select('*').then(r=>r,e=>({data:null,error:e}));
+  const [{data:t},{data:a},labRes,nomesRes,etapasDatasRes]=await Promise.all([pTurmas,pAnos,pLab,pNomes,pEtapasDatas]);
   TURMAS=t||[]; TURMA_NOME={}; TURMAS.forEach(x=>TURMA_NOME[x.codigo]=x.nome);
   ANOS=(a||[]).map(x=>x.ano);
   const optT=turmasVisiveis().map(x=>`<option value="${x.codigo}">${x.nome}</option>`).join('');
@@ -1160,14 +1235,15 @@ async function carregarRefs(){
   const optTTodas=TURMAS.map(x=>`<option value="${x.codigo}">${x.nome}</option>`).join('');
   ['c-turma','x-turma','k-turma','q-turma','b-turma','ea-turma','h-turma','pr-turma','pr-dturma','ex-turma','hh-turma','cc-turma','pd-turma','vc-turma','fq-turma','im-turma','fe-turma','fc-turma','ce-turma'].forEach(id=>$(id).innerHTML=optT);
   $('tm-turma').innerHTML='<option value="">Selecione a turma…</option>'+optT;
-  ['c-ano','l-ano','r-ano','rl-ano','x-ano','k-ano','q-ano','b-ano','h-ano','pr-ano','pr-dano','ex-ano','hh-ano','cc-ano','pd-ano','fq-ano','im-ano','fe-ano','lb-ano','rm-ano','fc-ano','ce-ano','tm-ano'].forEach(id=>$(id).innerHTML=optA);
+  ['c-ano','l-ano','r-ano','rl-ano','x-ano','k-ano','q-ano','b-ano','h-ano','pr-ano','pr-dano','ex-ano','hh-ano','cc-ano','pd-ano','fq-ano','im-ano','fe-ano','lb-ano','rm-ano','fc-ano','ce-ano','tm-ano','ed-ano','pl-ano'].forEach(id=>$(id).innerHTML=optA);
   $('l-turma').innerHTML='<option value="">Selecione a turma…</option>'+optT;
   // Criar/editar/consultar redações: todas as turmas, mesmo fora do escopo de correção
   // (criar e agendar redações é atividade de professor, não só de corretor; a criação em massa já era assim)
   $('r-turma').innerHTML=optTTodas;
   $('rl-turma').innerHTML='<option value="">Selecione a turma…</option>'+optTTodas;
-  LAB={}; ((labRes&&labRes.data)||[]).forEach(x=>LAB[x.ano+'|'+x.serie]={dia:x.dia});
+  LAB={}; ((labRes&&labRes.data)||[]).forEach(x=>LAB[x.ano+'|'+x.turma]={dia:x.dia});
   NOMES={}; ((nomesRes&&nomesRes.data)||[]).forEach(x=>{ if(x.nome) NOMES[x.matricula]=x.nome; });
+  ETAPAS_DATAS={}; ((etapasDatasRes&&etapasDatasRes.data)||[]).forEach(x=>ETAPAS_DATAS[x.ano+'|'+x.etapa]={inicio:x.data_inicio,fim:x.data_fim});
   $('r-data-g1').value=hojeISO(); $('r-data-g2').value=hojeISO();
   atualizarRotulos(); prefillDatasRedacao(); togglePenRow();
 }
@@ -1287,13 +1363,19 @@ function atualizarRotulos(){
   $('r-etapa').innerHTML=opcoesEtapa(turma);
   sugerirBanca();
 }
+function bancaTipoDeRotulo(r){
+  r=r||'';
+  let banca='ENEM';
+  if(r.startsWith('ATV')) banca='Atividade';
+  else if(r.includes('UECE')) banca='UECE';
+  else if(r.includes('UNIFOR')) banca='UNIFOR';
+  const tipo=(r==='AVP'||r==='AVB')?'prova':'comum';
+  return {banca,tipo};
+}
 function sugerirBanca(){
   const r=$('r-rotulo').value||'';
-  if(r.startsWith('ATV'))$('r-banca').value='Atividade';
-  else if(r.includes('UECE'))$('r-banca').value='UECE';
-  else if(r.includes('UNIFOR'))$('r-banca').value='UNIFOR';
-  else $('r-banca').value='ENEM';
-  $('r-tipo').value=(r==='AVP'||r==='AVB')?'prova':'comum';
+  const {banca,tipo}=bancaTipoDeRotulo(r);
+  $('r-banca').value=banca; $('r-tipo').value=tipo;
 }
 function abrirPenalidade(){ $('r-pen-abrir').classList.add('hide'); $('r-pen-row').classList.remove('hide'); $('r-pen-hint').classList.remove('hide'); $('r-pen').focus(); }
 function fecharPenalidade(){ $('r-pen').value=0; $('r-pen-motivo').value='Indisciplina'; $('r-pen-row').classList.add('hide'); $('r-pen-hint').classList.add('hide'); $('r-pen-abrir').classList.remove('hide'); }
@@ -1337,9 +1419,11 @@ async function salvarRedacao(){
   listarRedacoes(); setTimeout(()=>msg.textContent='',2500);
 }
 function redTab(w){
-  $('rt-uma').classList.toggle('on',w==='uma'); $('rt-massa').classList.toggle('on',w==='massa');
-  $('rp-uma').classList.toggle('hide',w!=='uma'); $('rp-massa').classList.toggle('hide',w!=='massa');
+  $('rt-uma').classList.toggle('on',w==='uma'); $('rt-massa').classList.toggle('on',w==='massa'); $('rt-plan').classList.toggle('on',w==='plan');
+  $('rp-uma').classList.toggle('hide',w!=='uma'); $('rp-massa').classList.toggle('hide',w!=='massa'); $('rp-plan').classList.toggle('hide',w!=='plan');
+  $('rl-wrap').classList.toggle('hide', w==='plan');
   if(w==='massa') prepararRedMassa();
+  if(w==='plan') prepararPlanejamento();
 }
 function turmasDaSerie(serie){ return TURMAS.filter(t=>serieDe(t.codigo)===serie).map(t=>t.codigo); }
 function serieRepresentativa(){ return turmasDaSerie($('rm-serie').value)[0]||$('rm-serie').value; }
@@ -1378,10 +1462,35 @@ function prepararRedMassa(){
   $('rm-serie').innerHTML=seriesDistintas().map(s=>`<option value="${s}">${esc(labelSerie(s))}</option>`).join('');
   montarRmEtapa(); montarRmTurmasHint(); rmHeader(); addRmRow();
 }
-function rmSequenciaDatas(){
-  const cfg=labDaTurma(+$('rm-ano').value, serieRepresentativa());
-  const base=(cfg&&cfg.dia!=null)? proximoDiaSemana(cfg.dia) : hojeISO();
-  [...$('rm-linhas').querySelectorAll('.rm-linha')].forEach((bloco,i)=>{ const g1=addDias(base,i*14); bloco.querySelector('.rm-g1').value=g1; if(!bloco.querySelector('.rm-externa').checked) bloco.querySelector('.rm-g2').value=addDias(g1,7); });
+async function proximoDiaLivre(ano,turmas,dataISO){
+  const {data}=await sb.from('dias_cancelados').select('data').eq('ano',ano).in('turma',turmas).eq('data',dataISO);
+  if(data&&data.length) return proximoDiaLivre(ano,turmas,addDias(dataISO,7));
+  return dataISO;
+}
+async function rmSequenciaDatas(){
+  const btn=$('rm-datas'); btn.disabled=true; btn.textContent='Calculando…';
+  const ano=+$('rm-ano').value, serie=$('rm-serie').value, turmasSerie=turmasDaSerie(serie);
+  const cfg=labDaTurma(ano, serieRepresentativa());
+  let cursor=(cfg&&cfg.dia!=null)? proximoDiaSemana(cfg.dia) : hojeISO();
+  const blocos=[...$('rm-linhas').querySelectorAll('.rm-linha')];
+  for(const bloco of blocos){
+    const g1=await proximoDiaLivre(ano,turmasSerie,cursor);
+    bloco.querySelector('.rm-g1').value=g1;
+    if(!bloco.querySelector('.rm-externa').checked){
+      const g2=await proximoDiaLivre(ano,turmasSerie,addDias(g1,7));
+      bloco.querySelector('.rm-g2').value=g2;
+      cursor=addDias(g2,7);
+    } else {
+      cursor=addDias(g1,14);
+    }
+  }
+  const diasDaSerie=new Set(turmasSerie.map(t=>{ const c=labDaTurma(ano,t); return c&&c.dia!=null?c.dia:null; }).filter(d=>d!=null));
+  const aviso=$('rm-datas-aviso');
+  if(diasDaSerie.size>1){
+    aviso.textContent='As turmas desta série têm dias de laboratório diferentes. As datas acima seguem só a primeira turma (' + (TURMA_NOME[serieRepresentativa()]||serieRepresentativa()) + '); confira e ajuste as demais depois de criar.';
+    aviso.classList.remove('hide');
+  } else { aviso.classList.add('hide'); aviso.textContent=''; }
+  btn.disabled=false; btn.textContent='Preencher datas em sequência';
 }
 async function criarEmMassa(){
   const msg=$('rm-msg'); msg.className='msg'; msg.textContent='';
@@ -1411,6 +1520,249 @@ async function criarEmMassa(){
   msg.className = erros?'msg err':'msg ok';
   msg.textContent = `Criadas ${criadas}.${existiam?(' Já existiam '+existiam+'.'):''}${erros?(' Erros: '+erros+'.'):''}`;
   listarRedacoes();
+}
+
+// ---------- PLANEJAMENTO ----------
+let planLinhas=[];
+let planSerieAtual=null;
+function baseRotulo(r){
+  if(!r) return '';
+  if(/^AVP/.test(r)) return 'AVP';
+  if(/^AVB/.test(r)) return 'AVB';
+  if(/^ATV/.test(r)) return 'ATV';
+  return r;
+}
+function montarPlanTabs(){
+  const series=seriesDistintas();
+  $('pl-series-tabs').innerHTML=series.map(s=>`<button data-serie="${esc(s)}" class="${s===planSerieAtual?'on':''}">${esc(labelSerie(s))}</button>`).join('');
+  $('pl-series-tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>planSelecionarSerie(b.dataset.serie));
+}
+function planSelecionarSerie(serie){
+  planSerieAtual=serie;
+  $('pl-series-tabs').querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.serie===serie));
+  const turmas=turmasDaSerie(serie);
+  $('pl-turma').innerHTML=turmas.map(t=>`<option value="${t}">${esc(TURMA_NOME[t]||t)}</option>`).join('');
+  montarPlanEtapa();
+  carregarPlanejamento();
+}
+function prepararPlanejamento(){
+  if(!planSerieAtual){ const series=seriesDistintas(); planSerieAtual=series[0]||null; }
+  montarPlanTabs();
+  if(planSerieAtual) planSelecionarSerie(planSerieAtual); else { $('pl-empty').textContent='Nenhuma turma cadastrada.'; $('pl-empty').classList.remove('hide'); }
+}
+function montarPlanEtapa(){
+  $('pl-etapa').innerHTML=opcoesEtapa($('pl-turma').value);
+}
+function diasNoPeriodo(diaSemana, inicio, fim){
+  const out=[]; let d=inicio, tentativas=0;
+  while(diaDaData(d)!==diaSemana && d<=fim && tentativas<7){ d=addDias(d,1); tentativas++; }
+  while(d<=fim){ out.push(d); d=addDias(d,7); }
+  return out;
+}
+async function carregarPlanejamento(){
+  const ano=+$('pl-ano').value, turma=$('pl-turma').value, etapa=+$('pl-etapa').value;
+  if(!turma||!etapa){ $('pl-res').classList.add('hide'); $('pl-empty').textContent='Selecione a turma e a etapa.'; $('pl-empty').classList.remove('hide'); return; }
+  const cfg=labDaTurma(ano,turma);
+  const per=ETAPAS_DATAS[ano+'|'+etapa];
+  if(!cfg||cfg.dia==null){ $('pl-res').classList.add('hide'); $('pl-empty').textContent=`A turma ${TURMA_NOME[turma]||turma} ainda não tem dia de laboratório configurado (Admin > Dias de laboratório).`; $('pl-empty').classList.remove('hide'); return; }
+  if(!per){ $('pl-res').classList.add('hide'); $('pl-empty').textContent=`A ${etapa}ª etapa de ${ano} ainda não tem datas configuradas (Admin > Datas das etapas).`; $('pl-empty').classList.remove('hide'); return; }
+  $('pl-periodo').textContent = `${etapa}ª etapa: ${dataBR(per.inicio)} a ${dataBR(per.fim)} · laboratório às ${DIAS_SEMANA[cfg.dia].toLowerCase()}s`;
+  const datas=diasNoPeriodo(cfg.dia, per.inicio, per.fim);
+  const [{data:reds},{data:cancelados}] = await Promise.all([
+    sb.from('redacoes').select('*').eq('ano',ano).eq('turma',turma).eq('etapa',etapa),
+    sb.from('dias_cancelados').select('*').eq('ano',ano).eq('turma',turma)
+  ]);
+  const cancelMap={}; (cancelados||[]).forEach(c=>cancelMap[c.data]=c.motivo);
+  const porData={};
+  (reds||[]).forEach(r=>{
+    if(r.data_g1){ porData[r.data_g1]=porData[r.data_g1]||{}; porData[r.data_g1][1]=r; }
+    if(r.data_g2){ porData[r.data_g2]=porData[r.data_g2]||{}; porData[r.data_g2][2]=r; }
+  });
+  planLinhas = datas.map(iso=>{
+    const motivo=cancelMap[iso];
+    if(motivo==='Ajuste de notas') return {data:iso, cancelado:null, ajuste:true, editando:false, grupo:null, rotulo:'', eixo:'', tema:'', redId:null};
+    if(motivo) return {data:iso, cancelado:motivo, ajuste:false, editando:false, grupo:null, rotulo:'', eixo:'', tema:'', redId:null};
+    const info=porData[iso];
+    if(info){
+      const g = info[1] ? 1 : 2;
+      const red=info[g];
+      return {data:iso, cancelado:null, ajuste:false, editando:false, grupo:g, rotulo:red.rotulo, eixo:red.eixo_tematico||'', tema:red.tema||'', redId:red.id};
+    }
+    return {data:iso, cancelado:null, ajuste:false, editando:false, grupo:null, rotulo:'', eixo:'', tema:'', redId:null};
+  });
+  renderPlanTbl();
+  $('pl-empty').classList.add('hide'); $('pl-res').classList.remove('hide');
+}
+function rotuloUsadoEmPlan(rotulo,grupo,exceto){
+  return planLinhas.findIndex((l,i)=> i!==exceto && l.rotulo===rotulo && l.grupo===grupo);
+}
+function statusPlanHTML(ln){
+  if(ln.cancelado) return '<span class="pl-status cancel">Sem atendimento</span>';
+  if(ln.ajuste) return '<span class="pl-status ajuste">Ajuste de notas</span>';
+  if(ln.rotulo) return '<span class="pl-status ok">Planejada</span>';
+  return '<span class="pl-status pendente">Não planejada</span>';
+}
+function grpPlanCel(ln,i){
+  if(ln.cancelado) return '<select disabled><option>—</option></select>';
+  const opts=[
+    `<option value="" ${!ln.grupo?'selected':''}>${ln.ajuste?'— (ambos) —':'— selecione —'}</option>`,
+    `<option value="1" ${ln.grupo===1?'selected':''}>Grupo 1</option>`,
+    `<option value="2" ${ln.grupo===2?'selected':''}>Grupo 2</option>`
+  ].join('');
+  return `<select class="pl-grp" data-i="${i}">${opts}</select>`;
+}
+function renderPlanTbl(){
+  const turma=$('pl-turma').value;
+  const rots=['',...rotulosDaTurma(turma)];
+  let h='<thead><tr><th>Data</th><th>Grupo</th><th>Rótulo</th><th>Eixo temático</th><th>Tema</th><th>Situação</th><th></th></tr></thead><tbody>';
+  planLinhas.forEach((ln,i)=>{
+    const cls = ln.cancelado?'pl-linha-cancelada':ln.ajuste?'pl-linha-ajuste':(ln.rotulo?'pl-linha-pronta':'pl-linha-vazia');
+    const semRotulo=!ln.rotulo;
+    const podeCancelar=semRotulo && !ln.ajuste;
+    const podeAjuste=semRotulo && !ln.cancelado;
+    let dataCel=`<span class="pl-data ${ln.cancelado?'pl-riscada':''}">${dataBR(ln.data)}</span>`;
+    if(ln.cancelado) dataCel+=`<span class="pl-motivo">${esc(ln.cancelado)}</span>`;
+    let acaoCel;
+    if(ln.cancelado){
+      acaoCel=`<button type="button" class="pl-btn-mini marcado" data-i="${i}" data-acao="restaurar">restaurar</button>`;
+    } else if(ln.editando){
+      acaoCel=`<select class="pl-motivo-sel" data-i="${i}">
+        <option value="">Escolha o motivo…</option>
+        <option value="Feriado">Feriado</option>
+        <option value="Preparação para evento">Preparação para evento</option>
+        <option value="Semana de AVBs">Semana de AVBs</option>
+        <option value="__outro__">Outro motivo…</option>
+      </select>`;
+    } else {
+      acaoCel=`<button type="button" class="pl-btn-mini" data-i="${i}" data-acao="cancelar" ${podeCancelar?'':'disabled title="Só é possível quando a linha não tem rótulo."'}>sem atendimento</button>`;
+    }
+    h+=`<tr class="${cls}">
+      <td>${dataCel}</td>
+      <td>${grpPlanCel(ln,i)}</td>
+      <td><select class="pl-rot" data-i="${i}" ${ln.cancelado||ln.ajuste?'disabled':''}>${rots.map(r=>`<option value="${r}" ${baseRotulo(ln.rotulo)===r?'selected':''}>${r||'—'}</option>`).join('')}</select></td>
+      <td><select class="pl-eixo" data-i="${i}" ${ln.rotulo?'':'disabled'}>${optsEixo(ln.eixo)}</select></td>
+      <td><input class="pl-tema" data-i="${i}" placeholder="opcional" value="${esc(ln.tema||'')}" ${ln.rotulo?'':'disabled'}></td>
+      <td>${statusPlanHTML(ln)}</td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        ${acaoCel}
+        <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)">
+          <input type="checkbox" class="pl-chk-ajuste" data-i="${i}" ${ln.ajuste?'checked':''} ${podeAjuste||ln.ajuste?'':'disabled'}> ajuste
+        </label>
+      </td>
+    </tr>`;
+  });
+  h+='</tbody>';
+  $('pl-tbl').innerHTML=h;
+
+  $('pl-tbl').querySelectorAll('.pl-grp').forEach(sel=>sel.onchange=(e)=>{ planLinhas[+e.target.dataset.i].grupo = e.target.value?+e.target.value:null; renderPlanTbl(); });
+  $('pl-tbl').querySelectorAll('.pl-rot').forEach(sel=>sel.onchange=(e)=>{
+    const i=+e.target.dataset.i, novoRot=e.target.value;
+    if(novoRot && planLinhas[i].grupo){
+      const conflito=rotuloUsadoEmPlan(novoRot, planLinhas[i].grupo, i);
+      if(conflito>=0){ alert(`"${novoRot}" já está usado no Grupo ${planLinhas[i].grupo} em ${dataBR(planLinhas[conflito].data)}. Escolha outro rótulo, ou ajuste a outra linha primeiro.`); renderPlanTbl(); return; }
+    }
+    planLinhas[i].rotulo=novoRot; renderPlanTbl();
+  });
+  $('pl-tbl').querySelectorAll('.pl-eixo').forEach(sel=>sel.onchange=(e)=>{ planLinhas[+e.target.dataset.i].eixo=e.target.value; });
+  $('pl-tbl').querySelectorAll('.pl-tema').forEach(inp=>inp.onchange=(e)=>{ planLinhas[+e.target.dataset.i].tema=e.target.value; });
+  $('pl-tbl').querySelectorAll('.pl-chk-ajuste').forEach(chk=>chk.onchange=(e)=>{
+    const i=+e.target.dataset.i;
+    planLinhas[i].ajuste=e.target.checked;
+    if(planLinhas[i].ajuste) planLinhas[i].grupo=null;
+    renderPlanTbl();
+  });
+  $('pl-tbl').querySelectorAll('[data-acao="cancelar"]').forEach(btn=>btn.onclick=()=>{ planLinhas[+btn.dataset.i].editando=true; renderPlanTbl(); });
+  $('pl-tbl').querySelectorAll('[data-acao="restaurar"]').forEach(btn=>btn.onclick=async()=>{
+    const i=+btn.dataset.i, ln=planLinhas[i];
+    const ano=+$('pl-ano').value, turma=$('pl-turma').value;
+    await sb.from('dias_cancelados').delete().eq('ano',ano).eq('turma',turma).eq('data',ln.data);
+    ln.cancelado=null; renderPlanTbl();
+  });
+  $('pl-tbl').querySelectorAll('.pl-motivo-sel').forEach(sel=>sel.onchange=async(e)=>{
+    const i=+e.target.dataset.i; let motivo=e.target.value;
+    if(motivo==='__outro__'){ motivo=(prompt('Descreva o motivo:')||'').trim(); }
+    if(!motivo){ planLinhas[i].editando=false; renderPlanTbl(); return; }
+    const ano=+$('pl-ano').value, turma=$('pl-turma').value;
+    await sb.from('dias_cancelados').upsert({ano,turma,data:planLinhas[i].data,motivo},{onConflict:'ano,turma,data'});
+    planLinhas[i].cancelado=motivo; planLinhas[i].editando=false; renderPlanTbl();
+  });
+}
+async function salvarPlanejamento(){
+  const msg=$('pl-msg'); msg.className='msg'; msg.textContent='Salvando…';
+  $('pl-salvar').disabled=true;
+  const ano=+$('pl-ano').value, turma=$('pl-turma').value, etapa=+$('pl-etapa').value;
+  // agrupar por rótulo
+  const grupos={};
+  planLinhas.forEach(l=>{ if(l.rotulo) (grupos[l.rotulo]=grupos[l.rotulo]||[]).push(l); });
+  // marcar ajustes que ainda não foram persistidos (Ajuste de notas)
+  const ajustesNovos = planLinhas.filter(l=>l.ajuste);
+  let ok=0, erros=0;
+  for(const ln of ajustesNovos){
+    await sb.from('dias_cancelados').upsert({ano,turma,data:ln.data,motivo:'Ajuste de notas'},{onConflict:'ano,turma,data'});
+  }
+  for(const rotulo of Object.keys(grupos)){
+    const ls=grupos[rotulo];
+    const l1=ls.find(l=>l.grupo===1), l2=ls.find(l=>l.grupo===2);
+    const dataBase = (l1&&l1.data)||(l2&&l2.data);
+    const rotuloFinal = rotuloComContexto(rotulo, etapa, dataBase);
+    const {banca,tipo} = bancaTipoDeRotulo(rotulo);
+    const eixo = (l1&&l1.eixo) || (l2&&l2.eixo) || '';
+    const tema = (l1&&l1.tema) || (l2&&l2.tema) || '';
+    const redIdExistente = (l1&&l1.redId) || (l2&&l2.redId) || null;
+    if(redIdExistente){
+      const {error}=await sb.from('redacoes').update({
+        rotulo:rotuloFinal, data:(l1?l1.data:l2.data), data_g1:l1?l1.data:null, data_g2:l2?l2.data:null,
+        banca, tipo, eixo_tematico:eixo||null, tema:tema||null
+      }).eq('id',redIdExistente);
+      if(error) erros++; else ok++;
+    } else {
+      const rec={ano,turma,rotulo:rotuloFinal,data:(l1?l1.data:l2.data),data_g1:l1?l1.data:null,data_g2:l2?l2.data:null,
+        banca,tipo,etapa,eixo_tematico:eixo||null,tema:tema||null,penalidade:0,penalidade_motivo:null,correcao_externa:false,
+        criado_por:perfil?perfil.login:null};
+      const {error}=await sb.from('redacoes').insert(rec);
+      if(!error) ok++; else if(error.code==='23505') erros++; else erros++;
+    }
+  }
+  $('pl-salvar').disabled=false;
+  msg.className = erros?'msg err':'msg ok';
+  msg.textContent = `${ok} redaç${ok===1?'ão':'ões'} salva${ok===1?'':'s'}.${erros?(' '+erros+' com erro.'):''}`;
+  await carregarPlanejamento();
+  listarRedacoes();
+}
+function duplicarPlanejamento(){
+  const serie=planSerieAtual, turmaAtual=$('pl-turma').value;
+  const outras=turmasDaSerie(serie).filter(t=>t!==turmaAtual);
+  if(!outras.length){ alert('Não há outra turma nesta série para duplicar.'); return; }
+  let alvo=outras[0];
+  if(outras.length>1){
+    alvo=prompt('Duplicar para qual turma? Opções: '+outras.map(t=>TURMA_NOME[t]||t).join(', '), TURMA_NOME[outras[0]]||outras[0]);
+    const encontrada=outras.find(t=>(TURMA_NOME[t]||t)===alvo || t===alvo);
+    if(!encontrada) return;
+    alvo=encontrada;
+  }
+  const ano=+$('pl-ano').value;
+  const copia = planLinhas.map(l=>({...l, redId:null, editando:false}));
+  $('pl-turma').value=alvo;
+  montarPlanEtapa(); $('pl-etapa').value=String(+$('pl-etapa').value)||$('pl-etapa').value;
+  carregarPlanejamento().then(async()=>{
+    // rótulo/eixo/tema ficam pendentes de revisão (só gravam ao clicar em Salvar)
+    copia.forEach((c,i)=>{ if(planLinhas[i] && c.rotulo){ planLinhas[i].rotulo=c.rotulo; planLinhas[i].grupo=c.grupo; planLinhas[i].eixo=c.eixo; planLinhas[i].tema=c.tema; } });
+    // dias sem atendimento / ajuste são fatos do calendário (ex.: feriado) e valem para a série toda,
+    // então já gravamos direto para a turma de destino, sem depender do botão Salvar
+    for(let i=0;i<copia.length;i++){
+      const c=copia[i], ln=planLinhas[i];
+      if(!ln || !c.data) continue;
+      if(c.cancelado && !ln.rotulo){
+        await sb.from('dias_cancelados').upsert({ano,turma:alvo,data:ln.data,motivo:c.cancelado},{onConflict:'ano,turma,data'});
+        ln.cancelado=c.cancelado;
+      } else if(c.ajuste && !ln.rotulo){
+        await sb.from('dias_cancelados').upsert({ano,turma:alvo,data:ln.data,motivo:'Ajuste de notas'},{onConflict:'ano,turma,data'});
+        ln.ajuste=true;
+      }
+    }
+    renderPlanTbl();
+    $('pl-msg').className='msg ok'; $('pl-msg').textContent='Copiado para '+(TURMA_NOME[alvo]||alvo)+'. Os dias sem atendimento/ajuste já foram gravados; rótulo, eixo e tema ainda precisam do botão Salvar planejamento.';
+  });
 }
 function montarRlEtapa(){
   const turma=$('rl-turma').value;
@@ -2513,13 +2865,20 @@ async function imprimirRoster(comDias){
   const {data}=await sb.from('matriculas_ano').select('matricula,grupo,horario').eq('ano',ano).eq('turma',turma).eq('ativo',true).order('grupo').order('horario');
   if(!data||!data.length){ alert('Nenhum aluno ativo nesta turma.'); return; }
   const dias = comDias ? await diasPorGrupo(ano,turma,etapa) : null;
+  let cancelMap={};
+  if(comDias){ const {data:cancelados}=await sb.from('dias_cancelados').select('data,motivo').eq('ano',ano).eq('turma',turma); (cancelados||[]).forEach(c=>cancelMap[c.data]=c.motivo); }
   let corpo='';
   [1,2].forEach(g=>{
     const al=data.filter(a=>a.grupo===g); if(!al.length) return;
     corpo+=`<div class="sec"><h3>${esc(TURMA_NOME[turma]||turma)} · Grupo ${g}</h3>`;
     const dd = comDias ? (dias[g]||[]) : [];
     if(comDias && dd.length){
-      corpo+='<table class="folha"><thead><tr><th>Matrícula</th><th>Horário</th>'+dd.map(d=>`<th>${calDia(d)}</th>`).join('')+'</tr></thead><tbody>';
+      corpo+='<table class="folha"><thead><tr><th>Matrícula</th><th>Horário</th>'+dd.map(d=>{
+        const motivo=cancelMap[d];
+        if(motivo==='Ajuste de notas') return `<th>${calDia(d)}<br><small>(Ajuste de notas)</small></th>`;
+        if(motivo) return `<th style="text-decoration:line-through">${calDia(d)}<br><small>(${esc(motivo)})</small></th>`;
+        return `<th>${calDia(d)}</th>`;
+      }).join('')+'</tr></thead><tbody>';
       al.forEach(a=>{ corpo+=`<tr><td class="mono">${matNome(a.matricula)}</td><td>${(a.horario||'').slice(0,5)}</td>${dd.map(()=>'<td></td>').join('')}</tr>`; });
       corpo+='</tbody></table>';
     } else {
@@ -2753,6 +3112,7 @@ async function adminCarregar(){
   carregarVinculos();
   carregarTurmasAdmin();
   carregarLabAdmin();
+  carregarEtapasDatasAdmin();
   $('ad-lista').innerHTML = '<thead><tr><th>Login</th><th>Papel</th></tr></thead><tbody>'+
     logins.map(l=>`<tr><td class="mono">${esc(l.login)}</td><td>${l.papel==='coordenacao'?'Coordenação':'Corretor'}</td></tr>`).join('')+'</tbody>';
 }
@@ -2899,47 +3259,78 @@ function avisoDatasEdit(){
   if($('er-externa')&&$('er-externa').checked) return;
   const cfg=labDaTurma(redEdit.ano,redEdit.turma); const el=$('er-aviso');
   if(!cfg||cfg.dia==null){ el.classList.add('hide'); el.textContent=''; return; }
-  const nome=labelSerie(serieDe(redEdit.turma)); const av=[];
+  const nome=TURMA_NOME[redEdit.turma]||redEdit.turma; const av=[];
   const d1=diaDaData($('er-data-g1').value); if(d1!=null&&d1!==cfg.dia) av.push(`Grupo 1 está em ${DIAS_SEMANA[d1]}.`);
   const d2=diaDaData($('er-data-g2').value); if(d2!=null&&d2!==cfg.dia) av.push(`Grupo 2 está em ${DIAS_SEMANA[d2]}.`);
   el.textContent = av.length ? `O laboratório da ${nome} é ${DIAS_SEMANA[cfg.dia]}. ${av.join(' ')}` : '';
   el.classList.toggle('hide',!av.length);
 }
 function preencherLabSelects(){
-  $('lb-serie').innerHTML=seriesDistintas().map(s=>`<option value="${s}">${esc(labelSerie(s))}</option>`).join('');
+  $('lb-turma').innerHTML=turmasVisiveis().map(x=>`<option value="${x.codigo}">${x.nome}</option>`).join('');
   $('lb-dia').innerHTML=opcoesDia();
 }
 function preencherLabForm(){
-  const cfg=LAB[(+$('lb-ano').value)+'|'+$('lb-serie').value];
+  const cfg=LAB[(+$('lb-ano').value)+'|'+$('lb-turma').value];
   $('lb-dia').value = cfg&&cfg.dia!=null? String(cfg.dia):'';
 }
 async function carregarLabAdmin(){
   preencherLabSelects(); preencherLabForm();
-  const {data,error}=await sb.from('laboratorio_dias').select('*').order('ano',{ascending:false}).order('serie');
+  const {data,error}=await sb.from('laboratorio_dias').select('*').order('ano',{ascending:false}).order('turma');
   const el=$('lb-lista');
-  if(error){ el.innerHTML='<tbody><tr><td class="hint">A tabela ainda não existe. Rode o SQL "laboratorio_dias.sql".</td></tr></tbody>'; return; }
+  if(error){ el.innerHTML='<tbody><tr><td class="hint">A tabela ainda não existe (ou está no formato antigo). Rode o SQL "laboratorio_dias_por_turma.sql".</td></tr></tbody>'; return; }
   const rows=data||[];
-  el.innerHTML = rows.length ? ('<thead><tr><th>Ano</th><th>Série</th><th>Dia do laboratório</th><th></th></tr></thead><tbody>'+
-    rows.map(r=>`<tr><td>${r.ano}</td><td>${esc(labelSerie(r.serie))}</td><td>${r.dia!=null?DIAS_SEMANA[r.dia]:'—'}</td><td class="num"><button class="lb-del" data-ano="${r.ano}" data-serie="${esc(r.serie)}">remover</button></td></tr>`).join('')+'</tbody>')
+  el.innerHTML = rows.length ? ('<thead><tr><th>Ano</th><th>Turma</th><th>Dia do laboratório</th><th></th></tr></thead><tbody>'+
+    rows.map(r=>`<tr><td>${r.ano}</td><td>${esc(TURMA_NOME[r.turma]||r.turma)}</td><td>${r.dia!=null?DIAS_SEMANA[r.dia]:'—'}</td><td class="num"><button class="lb-del" data-ano="${r.ano}" data-turma="${esc(r.turma)}">remover</button></td></tr>`).join('')+'</tbody>')
     : '<tbody><tr><td class="hint">Nenhum dia cadastrado ainda.</td></tr></tbody>';
-  el.querySelectorAll('.lb-del').forEach(b=>b.onclick=()=>removerLab(+b.dataset.ano,b.dataset.serie));
+  el.querySelectorAll('.lb-del').forEach(b=>b.onclick=()=>removerLab(+b.dataset.ano,b.dataset.turma));
 }
 async function salvarLab(){
   const msg=$('lb-msg'); msg.className='msg';
-  const ano=+$('lb-ano').value, serie=$('lb-serie').value;
+  const ano=+$('lb-ano').value, turma=$('lb-turma').value;
   const dia=$('lb-dia').value===''?null:+$('lb-dia').value;
+  const turmasAlvo = $('lb-aplicar-serie').checked ? irmasDaSerie(turma) : [turma];
   $('lb-btn').disabled=true;
-  const {error}=await sb.from('laboratorio_dias').upsert({ano,serie,dia},{onConflict:'ano,serie'});
+  const {error}=await sb.from('laboratorio_dias').upsert(turmasAlvo.map(t=>({ano,turma:t,dia})),{onConflict:'ano,turma'});
   $('lb-btn').disabled=false;
   if(error){ msg.className='msg err'; msg.textContent='Erro: '+error.message; return; }
-  msg.className='msg ok'; msg.textContent='Dia salvo.';
+  msg.className='msg ok'; msg.textContent = turmasAlvo.length>1 ? `Dia salvo para ${turmasAlvo.length} turmas.` : 'Dia salvo.';
   await carregarRefs(); carregarLabAdmin();
 }
-async function removerLab(ano,serie){
-  if(!confirm(`Remover o dia de laboratório da ${labelSerie(serie)} em ${ano}?`)) return;
-  const {error}=await sb.from('laboratorio_dias').delete().eq('ano',ano).eq('serie',serie);
+async function removerLab(ano,turma){
+  if(!confirm(`Remover o dia de laboratório de ${TURMA_NOME[turma]||turma} em ${ano}?`)) return;
+  const {error}=await sb.from('laboratorio_dias').delete().eq('ano',ano).eq('turma',turma);
   if(error){ alert('Erro: '+error.message); return; }
   await carregarRefs(); carregarLabAdmin();
+}
+
+// ---------- DATAS DAS ETAPAS (admin) ----------
+async function carregarEtapasDatasAdmin(){
+  const {data,error}=await sb.from('etapas_datas').select('*').order('ano',{ascending:false}).order('etapa');
+  const el=$('ed-lista');
+  if(error){ el.innerHTML='<tbody><tr><td class="hint">A tabela ainda não existe. Rode o SQL "etapas_datas.sql".</td></tr></tbody>'; return; }
+  const rows=data||[];
+  el.innerHTML = rows.length ? ('<thead><tr><th>Ano</th><th>Etapa</th><th>Início</th><th>Fim</th><th></th></tr></thead><tbody>'+
+    rows.map(r=>`<tr><td>${r.ano}</td><td>${r.etapa}ª</td><td>${dataBR(r.data_inicio)}</td><td>${dataBR(r.data_fim)}</td><td class="num"><button class="ed-del" data-ano="${r.ano}" data-etapa="${r.etapa}">remover</button></td></tr>`).join('')+'</tbody>')
+    : '<tbody><tr><td class="hint">Nenhuma etapa cadastrada ainda.</td></tr></tbody>';
+  el.querySelectorAll('.ed-del').forEach(b=>b.onclick=()=>removerEtapaData(+b.dataset.ano,+b.dataset.etapa));
+}
+async function salvarEtapaData(){
+  const msg=$('ed-msg'); msg.className='msg';
+  const ano=+$('ed-ano').value, etapa=+$('ed-etapa').value, inicio=$('ed-inicio').value, fim=$('ed-fim').value;
+  if(!inicio||!fim){ msg.className='msg err'; msg.textContent='Informe início e fim.'; return; }
+  if(fim<inicio){ msg.className='msg err'; msg.textContent='A data de fim não pode ser antes do início.'; return; }
+  $('ed-btn').disabled=true;
+  const {error}=await sb.from('etapas_datas').upsert({ano,etapa,data_inicio:inicio,data_fim:fim},{onConflict:'ano,etapa'});
+  $('ed-btn').disabled=false;
+  if(error){ msg.className='msg err'; msg.textContent='Erro: '+error.message; return; }
+  msg.className='msg ok'; msg.textContent='Salvo.';
+  await carregarRefs(); carregarEtapasDatasAdmin();
+}
+async function removerEtapaData(ano,etapa){
+  if(!confirm(`Remover as datas da ${etapa}ª etapa de ${ano}?`)) return;
+  const {error}=await sb.from('etapas_datas').delete().eq('ano',ano).eq('etapa',etapa);
+  if(error){ alert('Erro: '+error.message); return; }
+  await carregarRefs(); carregarEtapasDatasAdmin();
 }
 
 // ---------- TURMAS (admin) ----------
@@ -3204,38 +3595,99 @@ async function consEixo(){
 let calData=null;
 function montarCalEtapa(){ $('fc-etapa').innerHTML='<option value="">Todas as etapas</option>'+opcoesEtapa($('fc-turma').value); }
 function calDia(iso){ if(!iso) return '—'; const d=diaDaData(iso); const ab=['dom','seg','ter','qua','qui','sex','sáb'][d]; return `${dataBR(iso)} (${ab})`; }
-function calCorpo(reds){
+const MOTIVOS_CANCELAMENTO=['Feriado','Preparação para evento','Semana de AVBs'];
+function calCorpo(reds, turma, cancelMap){
+  cancelMap = cancelMap || {};
   const groups={}; reds.forEach(r=>{ (groups[r.etapa||0]=groups[r.etapa||0]||[]).push(r); });
   const etapas=Object.keys(groups).map(Number).sort((a,b)=>a-b);
+  function celData(iso){
+    if(!iso) return '—';
+    const motivo=cancelMap[turma+'|'+iso];
+    if(motivo==='Ajuste de notas') return `${calDia(iso)} <span class="pill" style="background:var(--accent-soft);color:var(--accent-ink)">Ajuste de notas</span>`;
+    if(motivo) return `<s>${calDia(iso)}</s> <span class="pill f-lo">${esc(motivo)}</span>`;
+    return calDia(iso);
+  }
   let html='';
   etapas.forEach(et=>{
     html+=`<h4 style="margin:16px 0 6px;color:var(--accent-ink);font-size:15px">${et?et+'ª etapa':'Sem etapa'}</h4>`;
     html+='<div style="overflow-x:auto"><table class="tbl folha"><thead><tr><th>Rótulo</th><th>Tipo</th><th>Grupo 1</th><th>Grupo 2</th></tr></thead><tbody>';
-    groups[et].forEach(r=>{ const tt=r.banca==='Atividade'?'Atividade':`${r.banca} · ${r.tipo==='prova'?'Prova':'Comum'}`; html+=`<tr><td class="mono">${esc(r.rotulo)}</td><td>${tt}</td><td>${calDia(r.data_g1||r.data)}</td><td>${calDia(r.data_g2)}</td></tr>`; });
+    groups[et].forEach(r=>{ const tt=r.banca==='Atividade'?'Atividade':`${r.banca} · ${r.tipo==='prova'?'Prova':'Comum'}`; html+=`<tr><td class="mono">${esc(r.rotulo)}</td><td>${tt}</td><td>${celData(r.data_g1||r.data)}</td><td>${celData(r.data_g2)}</td></tr>`; });
     html+='</tbody></table></div>';
   });
+  html+='<p class="sub-note" style="margin-top:8px">Os dias sem atendimento são marcados na aba Planejamento (em Redações).</p>';
   return html;
+}
+function opcoesMotivoCancelamento(){ return '<option value="">Selecione…</option>'+MOTIVOS_CANCELAMENTO.map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join('')+'<option value="__outro__">Outro motivo…</option>'; }
+async function carregarDiasCancelados(){
+  const ano=+$('fc-ano').value, turma=$('fc-turma').value;
+  if(!turma){ $('fc-cancel-panel').classList.add('hide'); return; }
+  $('fc-cancel-motivo').innerHTML=opcoesMotivoCancelamento();
+  $('fc-cancel-panel').classList.remove('hide');
+  const {data}=await sb.from('dias_cancelados').select('data,motivo').eq('ano',ano).eq('turma',turma).order('data');
+  const el=$('fc-cancel-lista');
+  if(!data||!data.length){ el.innerHTML='<p class="hint" style="margin:0">Nenhum dia marcado ainda para esta turma.</p>'; return; }
+  el.innerHTML=data.map(c=>`<div class="item"><div class="info"><div class="m">${calDia(c.data)}</div><div class="sub">${esc(c.motivo)}</div></div><div><button class="linklike fc-cancel-del" data-data="${c.data}">remover</button></div></div>`).join('');
+  el.querySelectorAll('.fc-cancel-del').forEach(b=>b.onclick=()=>removerDiaCancelado(b.dataset.data));
+}
+async function marcarDiaCanceladoManual(){
+  const ano=+$('fc-ano').value, turma=$('fc-turma').value;
+  const data=$('fc-cancel-data').value;
+  let motivo=$('fc-cancel-motivo').value;
+  if(!turma){ alert('Escolha a turma.'); return; }
+  if(!data){ alert('Escolha a data.'); return; }
+  if(motivo==='__outro__'){ motivo=(prompt('Descreva o motivo:')||'').trim(); if(!motivo) return; }
+  if(!motivo){ alert('Escolha o motivo.'); return; }
+  await sb.from('dias_cancelados').upsert({ano,turma,data,motivo},{onConflict:'ano,turma,data'});
+  $('fc-cancel-data').value=''; $('fc-cancel-motivo').value='';
+  carregarDiasCancelados(); consCalendario();
+}
+async function removerDiaCancelado(data){
+  const ano=+$('fc-ano').value, turma=$('fc-turma').value;
+  await sb.from('dias_cancelados').delete().eq('ano',ano).eq('turma',turma).eq('data',data);
+  carregarDiasCancelados(); consCalendario();
 }
 async function consCalendario(){
   const ano=+$('fc-ano').value, turma=$('fc-turma').value, etapa=$('fc-etapa').value;
   let q=sb.from('redacoes').select('id,rotulo,data,data_g1,data_g2,banca,tipo,etapa').eq('ano',ano).eq('turma',turma).eq('correcao_externa',false);
   if(etapa) q=q.eq('etapa',+etapa);
-  const {data:reds}=await q.order('etapa').order('data').order('id');
+  const [{data:reds}, {data:cancelados}] = await Promise.all([
+    q.order('etapa').order('data').order('id'),
+    sb.from('dias_cancelados').select('data,motivo').eq('ano',ano).eq('turma',turma)
+  ]);
   if(!reds||!reds.length){ $('fc-res').classList.add('hide'); $('fc-empty').classList.remove('hide'); $('fc-print').classList.add('hide'); return; }
-  $('fc-corpo').innerHTML=calCorpo(reds);
+  const cancelMap={}; (cancelados||[]).forEach(c=>cancelMap[turma+'|'+c.data]=c.motivo);
+  $('fc-corpo').innerHTML=calCorpo(reds, turma, cancelMap);
   $('fc-titulo').textContent=`Calendário · ${TURMA_NOME[turma]||turma}`;
   $('fc-sub').textContent=`${ano} · ${reds.length} ${reds.length===1?'redação':'redações'}`;
-  calData={reds,turma,ano};
+  calData={reds,turma,ano,cancelMap};
   $('fc-print').classList.remove('hide');
   $('fc-empty').classList.add('hide'); $('fc-res').classList.remove('hide');
 }
+function abrirSeletorCancelamento(btn){
+  const td=btn.closest('td');
+  const opts=['<option value="">— marcar motivo —</option>'].concat(MOTIVOS_CANCELAMENTO.map(m=>`<option value="${esc(m)}">${esc(m)}</option>`)).concat(['<option value="__outro__">Outro motivo…</option>']).join('');
+  td.innerHTML=`<select class="cal-cancel-sel">${opts}</select>`;
+  const sel=td.querySelector('select');
+  sel.onchange=async()=>{
+    let motivo=sel.value;
+    if(!motivo){ consCalendario(); return; }
+    if(motivo==='__outro__'){ motivo=(prompt('Descreva o motivo:')||'').trim(); if(!motivo){ consCalendario(); return; } }
+    await sb.from('dias_cancelados').upsert({ano:calData.ano,turma:btn.dataset.turma,data:btn.dataset.data,motivo},{onConflict:'ano,turma,data'});
+    consCalendario();
+  };
+  sel.focus();
+}
+async function restaurarDia(turma,data){
+  await sb.from('dias_cancelados').delete().eq('ano',calData.ano).eq('turma',turma).eq('data',data);
+  consCalendario();
+}
 function imprimirCalendario(){
   if(!calData) return;
-  abrirImpressao('Calendário de correções', `${TURMA_NOME[calData.turma]||calData.turma} · ${calData.ano}`, calCorpo(calData.reds));
+  abrirImpressao('Calendário de correções', `${TURMA_NOME[calData.turma]||calData.turma} · ${calData.ano}`, calCorpo(calData.reds, calData.turma, calData.cancelMap));
 }
 
 // ---------- TEMAS APLICADOS ----------
-let temasCSV=null;
+let temasCSV=null; let temasOriginais={};
 function montarTmEtapa(){
   const turma=$('tm-turma').value;
   $('tm-etapa').innerHTML='<option value="">Todas as etapas</option>'+(turma?opcoesEtapa(turma):'');
@@ -3244,7 +3696,7 @@ async function consTemas(){
   const ano=+$('tm-ano').value, turma=$('tm-turma').value, etapa=$('tm-etapa').value, verSerie=$('tm-serie-check').checked;
   if(!turma){ $('tm-res').classList.add('hide'); $('tm-csv').classList.add('hide'); $('tm-empty').textContent='Selecione uma turma para ver os temas.'; $('tm-empty').classList.remove('hide'); return; }
   const turmas = verSerie ? turmasDaSerie(serieDe(turma)) : [turma];
-  let q=sb.from('redacoes').select('turma,rotulo,data,eixo_tematico,tema').eq('ano',ano).in('turma',turmas).neq('banca','Atividade');
+  let q=sb.from('redacoes').select('id,turma,rotulo,data,eixo_tematico,tema').eq('ano',ano).in('turma',turmas).neq('banca','Atividade');
   if(etapa) q=q.eq('etapa',+etapa);
   const {data:reds,error}=await q;
   if(error){
@@ -3253,22 +3705,51 @@ async function consTemas(){
     $('tm-empty').classList.remove('hide');
     return;
   }
-  const linhas=(reds||[]).filter(r=>r.eixo_tematico||r.tema).sort((a,b)=> (a.data<b.data?-1:a.data>b.data?1:0));
-  if(!linhas.length){ $('tm-res').classList.add('hide'); $('tm-empty').textContent='Nenhuma redação com eixo ou tema cadastrado para este filtro.'; $('tm-empty').classList.remove('hide'); $('tm-csv').classList.add('hide'); return; }
+  const linhas=(reds||[]).sort((a,b)=> (a.data<b.data?-1:a.data>b.data?1:0));
+  if(!linhas.length){ $('tm-res').classList.add('hide'); $('tm-empty').textContent='Nenhuma redação para este filtro.'; $('tm-empty').classList.remove('hide'); $('tm-csv').classList.add('hide'); return; }
+  temasOriginais={};
   let h='<thead><tr><th>Turma</th><th>Rótulo</th><th>Data</th><th>Eixo</th><th>Tema</th></tr></thead><tbody>';
   const csv=[['Turma','Rótulo','Data','Eixo','Tema']];
   linhas.forEach(r=>{
-    h+=`<tr><td>${esc(TURMA_NOME[r.turma]||r.turma)}</td><td class="mono">${esc(r.rotulo)}</td><td>${dataBR(r.data)}</td><td>${r.eixo_tematico?eixoChip(r.eixo_tematico):'—'}</td><td>${r.tema?esc(r.tema):'—'}</td></tr>`;
+    temasOriginais[r.id]={eixo:r.eixo_tematico||'', tema:r.tema||''};
+    h+=`<tr data-id="${r.id}"><td>${esc(TURMA_NOME[r.turma]||r.turma)}</td><td class="mono">${esc(r.rotulo)}</td><td>${dataBR(r.data)}</td>
+      <td><select class="tm-edit-eixo" data-id="${r.id}">${optsEixo(r.eixo_tematico)}</select></td>
+      <td><input class="tm-edit-tema" data-id="${r.id}" type="text" value="${esc(r.tema||'')}" placeholder="Tema (opcional)"></td></tr>`;
     csv.push([TURMA_NOME[r.turma]||r.turma, r.rotulo, dataBR(r.data), r.eixo_tematico||'', r.tema||'']);
   });
   h+='</tbody>'; $('tm-tbl').innerHTML=h;
+  $('tm-tbl').querySelectorAll('.tm-edit-eixo, .tm-edit-tema').forEach(el=>el.addEventListener('input', marcarLinhaTemaAlterada));
   const nomeFiltro = verSerie ? labelSerie(serieDe(turma)) : (TURMA_NOME[turma]||turma);
   const nomeEtapa = etapa ? ` · ${etapa}ª etapa` : '';
   $('tm-titulo').textContent=`${nomeFiltro} · ${ano}${nomeEtapa}`;
   $('tm-sub').textContent=`${linhas.length} ${linhas.length===1?'redação':'redações'}`;
   temasCSV={rows:csv, nome:`temas_${turma}_${ano}.csv`};
   $('tm-csv').classList.remove('hide');
+  $('tm-salvar-wrap').classList.remove('hide'); $('tm-salvar-msg').textContent='';
   $('tm-empty').classList.add('hide'); $('tm-res').classList.remove('hide');
+}
+function marcarLinhaTemaAlterada(ev){
+  const id=ev.target.dataset.id, tr=$('tm-tbl').querySelector(`tr[data-id="${id}"]`);
+  const orig=temasOriginais[id]||{eixo:'',tema:''};
+  const eixoAtual=tr.querySelector('.tm-edit-eixo').value, temaAtual=tr.querySelector('.tm-edit-tema').value;
+  tr.classList.toggle('tm-linha-alterada', eixoAtual!==orig.eixo || temaAtual!==orig.tema);
+}
+async function salvarTemasMassa(){
+  const linhasAlteradas=[...$('tm-tbl').querySelectorAll('tr.tm-linha-alterada')];
+  const msg=$('tm-salvar-msg'); msg.className='msg';
+  if(!linhasAlteradas.length){ msg.className='msg err'; msg.textContent='Nenhuma alteração para salvar.'; return; }
+  $('tm-salvar').disabled=true; msg.textContent='Salvando…';
+  let ok=0, erros=0;
+  for(const tr of linhasAlteradas){
+    const id=tr.dataset.id;
+    const eixo=tr.querySelector('.tm-edit-eixo').value||null;
+    const tema=tr.querySelector('.tm-edit-tema').value.trim()||null;
+    const {error}=await sb.from('redacoes').update({eixo_tematico:eixo, tema:tema}).eq('id',id);
+    if(error) erros++; else { ok++; tr.classList.remove('tm-linha-alterada'); temasOriginais[id]={eixo:eixo||'',tema:tema||''}; }
+  }
+  $('tm-salvar').disabled=false;
+  msg.className = erros?'msg err':'msg ok';
+  msg.textContent = `Salvo ${ok}.${erros?(' Erros: '+erros+'.'):''}`;
 }
 function baixarTemasCSV(){
   if(!temasCSV) return;
@@ -3344,9 +3825,9 @@ $('sair').onclick=sair;
 $('nav-cad').onclick=()=>irPara('cad'); $('nav-red').onclick=()=>irPara('red'); $('nav-lanc').onclick=()=>irPara('lanc'); $('nav-cons').onclick=()=>irPara('cons'); $('nav-admin').onclick=()=>irPara('admin');
 $('ad-criar').onclick=criarLogin; $('ts-btn').onclick=trocarSenha; $('an-btn').onclick=abrirAno;
 document.querySelectorAll('#cons-grupos button').forEach(b=>b.onclick=()=>consGrupo(b.dataset.g));
-$('fc-ano').onchange=consCalendario; $('fc-turma').onchange=()=>{ montarCalEtapa(); consCalendario(); }; $('fc-etapa').onchange=consCalendario; $('fc-print').onclick=imprimirCalendario;
+$('fc-ano').onchange=()=>{ consCalendario(); carregarDiasCancelados(); }; $('fc-turma').onchange=()=>{ montarCalEtapa(); consCalendario(); carregarDiasCancelados(); }; $('fc-etapa').onchange=consCalendario; $('fc-print').onclick=imprimirCalendario; $('fc-cancel-btn').onclick=marcarDiaCanceladoManual;
 $('ce-ano').onchange=consEixo; $('ce-turma').onchange=consEixo;
-$('tm-ano').onchange=consTemas; $('tm-turma').onchange=()=>{ montarTmEtapa(); consTemas(); }; $('tm-etapa').onchange=consTemas; $('tm-serie-check').onchange=consTemas; $('tm-csv').onclick=baixarTemasCSV;
+$('tm-ano').onchange=consTemas; $('tm-turma').onchange=()=>{ montarTmEtapa(); consTemas(); }; $('tm-etapa').onchange=consTemas; $('tm-serie-check').onchange=consTemas; $('tm-csv').onclick=baixarTemasCSV; $('tm-salvar').onclick=salvarTemasMassa;
 $('fe-turma').onchange=atualizarEtapasFE; $('fe-gerar').onclick=consFreqEtapa; $('fe-print').onclick=imprimirFreqEtapa;
 $('cc-ano').onchange=consCompetencias; $('cc-turma').onchange=consCompetencias;
 $('pd-ano').onchange=consPendencias; $('pd-turma').onchange=consPendencias; $('pd-grupo').onchange=consPendencias;
@@ -3359,7 +3840,7 @@ $('bk-json').onclick=baixarBackup; $('bk-csv').onclick=baixarLancCSV;
 $('vc-btn').onclick=criarVinculo;
 $('tz-btn').onclick=adicionarTurma;
 document.querySelectorAll('#admin-tabs button').forEach(b=>b.onclick=()=>adminTab(b.dataset.w));
-$('lb-btn').onclick=salvarLab; $('lb-ano').onchange=preencherLabForm; $('lb-serie').onchange=preencherLabForm; $('er-data-g1').onchange=avisoDatasEdit; $('er-data-g2').onchange=avisoDatasEdit; $('er-tipo').onchange=togglePenRowEdit; $('er-banca').onchange=togglePenRowEdit; $('er-externa').onchange=toggleExternaEdit;
+$('lb-btn').onclick=salvarLab; $('lb-ano').onchange=preencherLabForm; $('lb-turma').onchange=preencherLabForm; $('ed-btn').onclick=salvarEtapaData; $('er-data-g1').onchange=avisoDatasEdit; $('er-data-g2').onchange=avisoDatasEdit; $('er-tipo').onchange=togglePenRowEdit; $('er-banca').onchange=togglePenRowEdit; $('er-externa').onchange=toggleExternaEdit;
 $('er-rotulo').onchange=()=>{ const rr=$('er-rotulo').value; if(rr==='AVP'||rr==='AVB')$('er-tipo').value='prova'; togglePenRowEdit(); };
 $('h-ano').onchange=listarHorarios; $('h-turma').onchange=()=>{ montarHEtapa(); listarHorarios(); }; $('h-etapa').onchange=listarHorarios;
 $('h-print-mh').onclick=()=>imprimirRoster(false); $('h-print-dias').onclick=()=>imprimirRoster(true);
@@ -3376,8 +3857,9 @@ $('r-turma').onchange=()=>{ atualizarRotulos(); prefillDatasRedacao(); }; $('r-a
 $('r-rotulo').onchange=()=>{ sugerirBanca(); togglePenRow(); }; $('r-tipo').onchange=togglePenRow; $('r-banca').onchange=togglePenRow; $('r-salvar').onclick=salvarRedacao; $('r-externa').onchange=toggleExterna;
 $('r-pen-abrir').onclick=abrirPenalidade; $('r-pen-fechar').onclick=fecharPenalidade;
 $('er-pen-abrir').onclick=abrirPenalidadeEdit; $('er-pen-fechar').onclick=fecharPenalidadeEdit;
-$('rt-uma').onclick=()=>redTab('uma'); $('rt-massa').onclick=()=>redTab('massa');
+$('rt-uma').onclick=()=>redTab('uma'); $('rt-massa').onclick=()=>redTab('massa'); $('rt-plan').onclick=()=>redTab('plan');
 $('rm-serie').onchange=()=>{ montarRmEtapa(); montarRmTurmasHint(); rmHeader(); addRmRow(); }; $('rm-add').onclick=addRmRow; $('rm-datas').onclick=rmSequenciaDatas; $('rm-criar').onclick=criarEmMassa;
+$('pl-turma').onchange=()=>{ montarPlanEtapa(); carregarPlanejamento(); }; $('pl-ano').onchange=carregarPlanejamento; $('pl-etapa').onchange=carregarPlanejamento; $('pl-salvar').onclick=salvarPlanejamento; $('pl-duplicar').onclick=duplicarPlanejamento;
 $('rl-ano').onchange=listarRedacoes; $('rl-turma').onchange=()=>{ montarRlEtapa(); listarRedacoes(); }; $('rl-etapa').onchange=listarRedacoes; $('rl-serie').onchange=listarRedacoes;
 $('x-ano').onchange=carregarRedacoesSelect; $('x-turma').onchange=()=>{ atualizarEtapasLancar(); carregarRedacoesSelect(); }; $('x-etapa').onchange=carregarRedacoesSelect; $('x-red').onchange=abrirRedacao; $('x-grupo').onchange=listarParaLancar;
 document.querySelectorAll('#md-freq button').forEach(b=>b.onclick=()=>{setFreq(b.dataset.f);aplicarRegras();recalcular();agendarAutosave();});
