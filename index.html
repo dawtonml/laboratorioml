@@ -1561,8 +1561,19 @@ function prepararPlanejamento(){
   montarPlanTabs();
   if(planSerieAtual) planSelecionarSerie(planSerieAtual); else { $('pl-empty').textContent='Nenhuma turma cadastrada.'; $('pl-empty').classList.remove('hide'); }
 }
+function etapaAtual(ano, turma){
+  const hoje=hojeISO();
+  for(let e=1; e<=nEtapas(turma); e++){
+    const per=periodoEtapa(ano, e, turma);
+    if(per && hoje>=per.inicio && hoje<=per.fim) return e;
+  }
+  return null;
+}
 function montarPlanEtapa(){
   $('pl-etapa').innerHTML=opcoesEtapa($('pl-turma').value);
+  const ano=+$('pl-ano').value, turma=$('pl-turma').value;
+  const atual=etapaAtual(ano,turma);
+  if(atual) $('pl-etapa').value=String(atual);
 }
 function dataCurta(iso){ const [,m,d]=iso.split('-'); return `${d}/${m}`; }
 function diasNoPeriodo(diaSemana, inicio, fim){
@@ -1593,21 +1604,27 @@ async function carregarPlanejamento(){
   });
   planLinhas = datas.map(iso=>{
     const motivo=cancelMap[iso];
-    if(motivo==='Ajuste de notas') return {data:iso, cancelado:null, ajuste:true, editando:false, grupo:null, rotulo:'', eixo:'', tema:'', redId:null};
-    if(motivo) return {data:iso, cancelado:motivo, ajuste:false, editando:false, grupo:null, rotulo:'', eixo:'', tema:'', redId:null};
+    if(motivo==='Ajuste de notas') return {data:iso, cancelado:null, ajuste:true, editando:false, grupo:null, rotulo:'', eixo:'', tema:'', redId:null, redObj:null};
+    if(motivo) return {data:iso, cancelado:motivo, ajuste:false, editando:false, grupo:null, rotulo:'', eixo:'', tema:'', redId:null, redObj:null};
     const info=porData[iso];
     if(info){
+      if(info[1] && info[2] && info[1].id===info[2].id){
+        // mesma redação usa a mesma data para os dois grupos (ex.: 3ª série)
+        const red=info[1];
+        return {data:iso, cancelado:null, ajuste:false, editando:false, grupo:null, rotulo:red.rotulo, eixo:red.eixo_tematico||'', tema:red.tema||'', redId:red.id, redObj:red};
+      }
       const g = info[1] ? 1 : 2;
       const red=info[g];
-      return {data:iso, cancelado:null, ajuste:false, editando:false, grupo:g, rotulo:red.rotulo, eixo:red.eixo_tematico||'', tema:red.tema||'', redId:red.id};
+      return {data:iso, cancelado:null, ajuste:false, editando:false, grupo:g, rotulo:red.rotulo, eixo:red.eixo_tematico||'', tema:red.tema||'', redId:red.id, redObj:red};
     }
-    return {data:iso, cancelado:null, ajuste:false, editando:false, grupo:null, rotulo:'', eixo:'', tema:'', redId:null};
+    return {data:iso, cancelado:null, ajuste:false, editando:false, grupo:null, rotulo:'', eixo:'', tema:'', redId:null, redObj:null};
   });
   renderPlanTbl();
   $('pl-empty').classList.add('hide'); $('pl-res').classList.remove('hide');
 }
 function rotuloUsadoEmPlan(rotulo,grupo,exceto){
-  return planLinhas.findIndex((l,i)=> i!==exceto && l.rotulo===rotulo && l.grupo===grupo);
+  // conflita se for o mesmo grupo, ou se qualquer um dos dois lados for "sem grupo" (vale para os dois grupos)
+  return planLinhas.findIndex((l,i)=> i!==exceto && l.rotulo===rotulo && (l.grupo===grupo || !l.grupo || !grupo));
 }
 function statusPlanHTML(ln){
   if(ln.cancelado) return '<span class="pl-status cancel">Sem atendimento</span>';
@@ -1618,11 +1635,11 @@ function statusPlanHTML(ln){
 function grpPlanCel(ln,i){
   if(ln.cancelado) return '<select disabled><option>—</option></select>';
   const opts=[
-    `<option value="" ${!ln.grupo?'selected':''}>${ln.ajuste?'— (ambos) —':'— selecione —'}</option>`,
+    `<option value="" ${!ln.grupo?'selected':''}>— Os dois grupos —</option>`,
     `<option value="1" ${ln.grupo===1?'selected':''}>Grupo 1</option>`,
     `<option value="2" ${ln.grupo===2?'selected':''}>Grupo 2</option>`
   ].join('');
-  return `<select class="pl-grp" data-i="${i}">${opts}</select>`;
+  return `<select class="pl-grp" data-i="${i}" title="Deixe em '— Os dois grupos —' quando os dois grupos são atendidos na mesma data (ex.: 3ª série)">${opts}</select>`;
 }
 function renderPlanTbl(){
   const turma=$('pl-turma').value;
@@ -1646,6 +1663,8 @@ function renderPlanTbl(){
         <option value="Semana de AVBs">Semana de AVBs</option>
         <option value="__outro__">Outro motivo…</option>
       </select>`;
+    } else if(ln.redId){
+      acaoCel=`<button type="button" class="pl-btn-mini" data-i="${i}" data-acao="editar">editar detalhes</button>`;
     } else {
       acaoCel=`<button type="button" class="pl-btn-mini" data-i="${i}" data-acao="cancelar" ${podeCancelar?'':'disabled title="Só é possível quando a linha não tem rótulo."'}>sem atendimento</button>`;
     }
@@ -1684,6 +1703,7 @@ function renderPlanTbl(){
     renderPlanTbl();
   });
   $('pl-tbl').querySelectorAll('[data-acao="cancelar"]').forEach(btn=>btn.onclick=()=>{ planLinhas[+btn.dataset.i].editando=true; renderPlanTbl(); });
+  $('pl-tbl').querySelectorAll('[data-acao="editar"]').forEach(btn=>btn.onclick=()=>{ const ln=planLinhas[+btn.dataset.i]; if(ln.redObj) abrirEditarRedacao(ln.redObj); });
   $('pl-tbl').querySelectorAll('[data-acao="restaurar"]').forEach(btn=>btn.onclick=async()=>{
     const i=+btn.dataset.i, ln=planLinhas[i];
     const ano=+$('pl-ano').value, turma=$('pl-turma').value;
@@ -1714,21 +1734,29 @@ async function salvarPlanejamento(){
   }
   for(const rotulo of Object.keys(grupos)){
     const ls=grupos[rotulo];
+    const semGrupo=ls.find(l=>!l.grupo);
     const l1=ls.find(l=>l.grupo===1), l2=ls.find(l=>l.grupo===2);
-    const dataBase = (l1&&l1.data)||(l2&&l2.data);
+    let dataG1, dataG2, eixo, tema, redIdExistente;
+    if(semGrupo && !l1 && !l2){
+      // sem grupo selecionado = os dois grupos atendidos na mesma data (ex.: 3ª série)
+      dataG1=semGrupo.data; dataG2=semGrupo.data;
+      eixo=semGrupo.eixo||''; tema=semGrupo.tema||''; redIdExistente=semGrupo.redId||null;
+    } else {
+      dataG1=l1?l1.data:null; dataG2=l2?l2.data:null;
+      eixo=(l1&&l1.eixo)||(l2&&l2.eixo)||''; tema=(l1&&l1.tema)||(l2&&l2.tema)||'';
+      redIdExistente=(l1&&l1.redId)||(l2&&l2.redId)||null;
+    }
+    const dataBase = dataG1||dataG2;
     const rotuloFinal = rotuloComContexto(rotulo, etapa, dataBase);
     const {banca,tipo} = bancaTipoDeRotulo(rotulo);
-    const eixo = (l1&&l1.eixo) || (l2&&l2.eixo) || '';
-    const tema = (l1&&l1.tema) || (l2&&l2.tema) || '';
-    const redIdExistente = (l1&&l1.redId) || (l2&&l2.redId) || null;
     if(redIdExistente){
       const {error}=await sb.from('redacoes').update({
-        rotulo:rotuloFinal, data:(l1?l1.data:l2.data), data_g1:l1?l1.data:null, data_g2:l2?l2.data:null,
+        rotulo:rotuloFinal, data:dataBase, data_g1:dataG1, data_g2:dataG2,
         banca, tipo, eixo_tematico:eixo||null, tema:tema||null
       }).eq('id',redIdExistente);
       if(error) erros++; else ok++;
     } else {
-      const rec={ano,turma,rotulo:rotuloFinal,data:(l1?l1.data:l2.data),data_g1:l1?l1.data:null,data_g2:l2?l2.data:null,
+      const rec={ano,turma,rotulo:rotuloFinal,data:dataBase,data_g1:dataG1,data_g2:dataG2,
         banca,tipo,etapa,eixo_tematico:eixo||null,tema:tema||null,penalidade:0,penalidade_motivo:null,correcao_externa:false,
         criado_por:perfil?perfil.login:null};
       const {error}=await sb.from('redacoes').insert(rec);
@@ -2435,6 +2463,7 @@ async function salvarEditarRedacao(){
   $('er-salvar').disabled=false;
   if(error){msg.textContent=error.code==='23505'?'Já existe uma redação com esse rótulo nesta turma e ano.':'Erro: '+error.message;return;}
   $('ov-red').classList.add('hide'); listarRedacoes();
+  if(!$('rp-plan').classList.contains('hide')) carregarPlanejamento();
 }
 async function apagarRedacao(){
   if(!confirm('Apagar esta redação? Todos os lançamentos dela serão removidos. Esta ação não pode ser desfeita.'))return;
@@ -2442,6 +2471,7 @@ async function apagarRedacao(){
   const {error}=await sb.from('redacoes').delete().eq('id',redEdit.id);
   if(error){msg.textContent='Erro ao apagar: '+error.message;return;}
   $('ov-red').classList.add('hide'); listarRedacoes();
+  if(!$('rp-plan').classList.contains('hide')) carregarPlanejamento();
 }
 
 // ==================================================================
