@@ -1582,7 +1582,7 @@ async function carregarPlanejamento(){
   $('pl-periodo').textContent = `${etapa}ª etapa: ${dataBR(per.inicio)} a ${dataBR(per.fim)} · laboratório às ${DIAS_SEMANA[cfg.dia].toLowerCase()}s${usaExcecao3?' · datas específicas da 3ª série':''}`;
   const datas=diasNoPeriodo(cfg.dia, per.inicio, per.fim);
   const [{data:reds},{data:cancelados}] = await Promise.all([
-    sb.from('redacoes').select('*').eq('ano',ano).eq('turma',turma).eq('etapa',etapa),
+    sb.from('redacoes').select('*').eq('ano',ano).eq('turma',turma).eq('etapa',etapa).eq('correcao_externa',false),
     sb.from('dias_cancelados').select('*').eq('ano',ano).eq('turma',turma)
   ]);
   const cancelMap={}; (cancelados||[]).forEach(c=>cancelMap[c.data]=c.motivo);
@@ -2885,7 +2885,7 @@ async function imprimirRoster(comDias){
     corpo+=`<div class="sec"><h3>${esc(TURMA_NOME[turma]||turma)} · Grupo ${g}</h3>`;
     const dd = comDias ? (dias[g]||[]) : [];
     if(comDias && dd.length){
-      corpo+='<table class="folha"><thead><tr><th>Matrícula</th><th>Horário</th>'+dd.map(d=>{
+      corpo+='<table class="folha folha-h"><thead><tr><th>Matrícula</th><th>Horário</th>'+dd.map(d=>{
         const motivo=cancelMap[d];
         if(motivo==='Ajuste de notas') return `<th>${calDia(d)}<br><small>(Ajuste de notas)</small></th>`;
         if(motivo) return `<th style="text-decoration:line-through">${calDia(d)}<br><small>(${esc(motivo)})</small></th>`;
@@ -2895,7 +2895,7 @@ async function imprimirRoster(comDias){
       corpo+='</tbody></table>';
     } else {
       if(comDias) corpo+='<p class="sub-note">Sem datas cadastradas para este grupo neste filtro.</p>';
-      corpo+='<table class="folha"><thead><tr><th>Matrícula</th><th>Horário</th></tr></thead><tbody>';
+      corpo+='<table class="folha folha-h"><thead><tr><th>Matrícula</th><th>Horário</th></tr></thead><tbody>';
       al.forEach(a=>{ corpo+=`<tr><td class="mono">${matNome(a.matricula)}</td><td>${(a.horario||'').slice(0,5)}</td></tr>`; });
       corpo+='</tbody></table>';
     }
@@ -3432,6 +3432,9 @@ const CSS_IMPRESSAO = `
   table{width:100%;border-collapse:collapse;font-size:12px} th,td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
   th{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)} .num{text-align:right} td.det{white-space:normal;color:var(--muted);font-size:11px}
   table.folha th, table.folha td{border:1px solid var(--line)} table.folha td{height:30px}
+  table.folha-h{table-layout:fixed}
+  table.folha-h th:first-child, table.folha-h td:first-child{width:170px;overflow:hidden;text-overflow:ellipsis}
+  table.folha-h th:nth-child(2), table.folha-h td:nth-child(2){width:70px}
   .pill{display:inline-block;padding:2px 8px;border-radius:12px;font-weight:700;font-size:12px}
   .pill.f-ok{background:var(--ok-soft);color:var(--brand2-ink)} .pill.f-md{background:var(--warn-soft);color:var(--warn)}
   .pill.f-lo{background:var(--danger-soft);color:var(--danger)} .pill.f-na{background:var(--line);color:var(--muted)}
@@ -3515,7 +3518,7 @@ function imprimirFrequencia(){
   if(!fqAtual){ alert('Gere a frequência primeiro.'); return; }
   const {r,grupo,dataGrupo,rows,faltas}=fqAtual; const ehAtiv=r.banca==='Atividade';
   let corpo = `<p class="sub-note"><strong>Faltaram (${faltas.length}):</strong> ${faltas.length? faltas.map(f=>f.mat).join(', ') : 'ninguém'}</p>`;
-  corpo += '<table class="folha"><thead><tr><th>Matrícula</th><th>Horário</th><th>Frequência</th>'+(ehAtiv?'<th>Avaliação</th>':'')+'</tr></thead><tbody>';
+  corpo += '<table class="folha folha-h"><thead><tr><th>Matrícula</th><th>Horário</th><th>Frequência</th>'+(ehAtiv?'<th>Avaliação</th>':'')+'</tr></thead><tbody>';
   rows.forEach(x=>{ corpo+=`<tr><td class="mono">${matNome(x.mat)}</td><td>${x.hora}</td><td>${freqTexto(x.freq)}</td>${ehAtiv?('<td>'+(x.aval?avalLabel(x.aval):'—')+'</td>'):''}</tr>`; });
   corpo+='</tbody></table>';
   abrirImpressao(ehAtiv?'Frequência e avaliação da atividade':'Frequência de correção', `${r.rotulo} · ${TURMA_NOME[r.turma]||r.turma} · Grupo ${grupo}${dataGrupo?(' · '+dataBR(dataGrupo)):''}`, corpo);
@@ -3530,7 +3533,7 @@ async function imprimirFolhaNotas(){
   [1,2].forEach(g=>{
     const al=data.filter(a=>a.grupo===g); if(!al.length) return;
     corpo+=`<div class="sec"><h3>${esc(TURMA_NOME[turma]||turma)} · Grupo ${g}</h3>`;
-    corpo+='<table class="folha"><thead><tr><th>Matrícula</th><th>Horário</th><th style="width:110px">Nota</th><th>Observações</th></tr></thead><tbody>';
+    corpo+='<table class="folha folha-h"><thead><tr><th>Matrícula</th><th>Horário</th><th style="width:110px">Nota</th><th>Observações</th></tr></thead><tbody>';
     al.forEach(a=>{ corpo+=`<tr><td class="mono">${matNome(a.matricula)}</td><td>${(a.horario||'').slice(0,5)}</td><td></td><td></td></tr>`; });
     for(let i=0;i<3;i++) corpo+='<tr><td></td><td></td><td></td><td></td></tr>';
     corpo+='</tbody></table></div>';
