@@ -940,7 +940,10 @@
           <div><label for="ed-inicio">Início</label><input id="ed-inicio" type="date"></div>
           <div><label for="ed-fim">Fim</label><input id="ed-fim" type="date"></div>
         </div>
-        <div class="row-actions"><button class="primary" id="ed-btn">Salvar</button><span class="msg" id="ed-msg"></span></div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink);margin-top:8px">
+          <input type="checkbox" id="ed-serie3"> Datas diferentes só para a 3ª série (ex.: calendário mais compactado por causa do vestibular)
+        </label>
+        <div class="row-actions" style="margin-top:8px"><button class="primary" id="ed-btn">Salvar</button><span class="msg" id="ed-msg"></span></div>
         <div style="overflow-x:auto;margin-top:8px"><table class="tbl" id="ed-lista"></table></div>
       </div>
       </div>
@@ -1203,6 +1206,10 @@ function proximoDiaSemana(dia){
 function addDias(iso,n){ const [y,m,dd]=iso.split('-').map(Number); const d=new Date(y,m-1,dd); d.setDate(d.getDate()+n); const o=d.getTimezoneOffset(); return new Date(d-o*60000).toISOString().slice(0,10); }
 function diaDaData(iso){ if(!iso) return null; const [y,m,dd]=iso.split('-').map(Number); return new Date(y,m-1,dd).getDay(); }
 function labDaTurma(ano,turma){ return LAB[ano+'|'+turma]||null; }
+function periodoEtapa(ano, etapa, turma){
+  const serie=serieDe(turma);
+  return ETAPAS_DATAS[ano+'|'+etapa+'|'+serie] || ETAPAS_DATAS[ano+'|'+etapa+'|geral'] || null;
+}
 function labelSerie(serie){ const t=TURMAS.find(x=>serieDe(x.codigo)===serie); return t? t.nome.replace(/\s+[A-Za-z0-9]$/,'') : serie; }
 function seriesDistintas(){ const seen=[]; TURMAS.forEach(t=>{ const s=serieDe(t.codigo); if(!seen.includes(s)) seen.push(s); }); return seen; }
 function prefillDatasRedacao(){
@@ -1243,7 +1250,7 @@ async function carregarRefs(){
   $('rl-turma').innerHTML='<option value="">Selecione a turma…</option>'+optTTodas;
   LAB={}; ((labRes&&labRes.data)||[]).forEach(x=>LAB[x.ano+'|'+x.turma]={dia:x.dia});
   NOMES={}; ((nomesRes&&nomesRes.data)||[]).forEach(x=>{ if(x.nome) NOMES[x.matricula]=x.nome; });
-  ETAPAS_DATAS={}; ((etapasDatasRes&&etapasDatasRes.data)||[]).forEach(x=>ETAPAS_DATAS[x.ano+'|'+x.etapa]={inicio:x.data_inicio,fim:x.data_fim});
+  ETAPAS_DATAS={}; ((etapasDatasRes&&etapasDatasRes.data)||[]).forEach(x=>ETAPAS_DATAS[x.ano+'|'+x.etapa+'|'+(x.serie||'geral')]={inicio:x.data_inicio,fim:x.data_fim});
   $('r-data-g1').value=hojeISO(); $('r-data-g2').value=hojeISO();
   atualizarRotulos(); prefillDatasRedacao(); togglePenRow();
 }
@@ -1563,10 +1570,11 @@ async function carregarPlanejamento(){
   const ano=+$('pl-ano').value, turma=$('pl-turma').value, etapa=+$('pl-etapa').value;
   if(!turma||!etapa){ $('pl-res').classList.add('hide'); $('pl-empty').textContent='Selecione a turma e a etapa.'; $('pl-empty').classList.remove('hide'); return; }
   const cfg=labDaTurma(ano,turma);
-  const per=ETAPAS_DATAS[ano+'|'+etapa];
+  const per=periodoEtapa(ano,etapa,turma);
   if(!cfg||cfg.dia==null){ $('pl-res').classList.add('hide'); $('pl-empty').textContent=`A turma ${TURMA_NOME[turma]||turma} ainda não tem dia de laboratório configurado (Admin > Dias de laboratório).`; $('pl-empty').classList.remove('hide'); return; }
   if(!per){ $('pl-res').classList.add('hide'); $('pl-empty').textContent=`A ${etapa}ª etapa de ${ano} ainda não tem datas configuradas (Admin > Datas das etapas).`; $('pl-empty').classList.remove('hide'); return; }
-  $('pl-periodo').textContent = `${etapa}ª etapa: ${dataBR(per.inicio)} a ${dataBR(per.fim)} · laboratório às ${DIAS_SEMANA[cfg.dia].toLowerCase()}s`;
+  const usaExcecao3 = serieDe(turma)==='3' && ETAPAS_DATAS[ano+'|'+etapa+'|3'];
+  $('pl-periodo').textContent = `${etapa}ª etapa: ${dataBR(per.inicio)} a ${dataBR(per.fim)} · laboratório às ${DIAS_SEMANA[cfg.dia].toLowerCase()}s${usaExcecao3?' · datas específicas da 3ª série':''}`;
   const datas=diasNoPeriodo(cfg.dia, per.inicio, per.fim);
   const [{data:reds},{data:cancelados}] = await Promise.all([
     sb.from('redacoes').select('*').eq('ano',ano).eq('turma',turma).eq('etapa',etapa),
@@ -3305,30 +3313,34 @@ async function removerLab(ano,turma){
 
 // ---------- DATAS DAS ETAPAS (admin) ----------
 async function carregarEtapasDatasAdmin(){
-  const {data,error}=await sb.from('etapas_datas').select('*').order('ano',{ascending:false}).order('etapa');
+  const {data,error}=await sb.from('etapas_datas').select('*').order('ano',{ascending:false}).order('etapa').order('serie');
   const el=$('ed-lista');
-  if(error){ el.innerHTML='<tbody><tr><td class="hint">A tabela ainda não existe. Rode o SQL "etapas_datas.sql".</td></tr></tbody>'; return; }
+  if(error){ el.innerHTML='<tbody><tr><td class="hint">A tabela ainda não existe (ou está desatualizada). Rode o SQL "etapas_datas.sql".</td></tr></tbody>'; return; }
   const rows=data||[];
-  el.innerHTML = rows.length ? ('<thead><tr><th>Ano</th><th>Etapa</th><th>Início</th><th>Fim</th><th></th></tr></thead><tbody>'+
-    rows.map(r=>`<tr><td>${r.ano}</td><td>${r.etapa}ª</td><td>${dataBR(r.data_inicio)}</td><td>${dataBR(r.data_fim)}</td><td class="num"><button class="ed-del" data-ano="${r.ano}" data-etapa="${r.etapa}">remover</button></td></tr>`).join('')+'</tbody>')
+  el.innerHTML = rows.length ? ('<thead><tr><th>Ano</th><th>Etapa</th><th>Abrangência</th><th>Início</th><th>Fim</th><th></th></tr></thead><tbody>'+
+    rows.map(r=>`<tr><td>${r.ano}</td><td>${r.etapa}ª</td><td>${r.serie==='3'?'Só 3ª série':'Escola toda'}</td><td>${dataBR(r.data_inicio)}</td><td>${dataBR(r.data_fim)}</td><td class="num"><button class="ed-del" data-ano="${r.ano}" data-etapa="${r.etapa}" data-serie="${r.serie||''}">remover</button></td></tr>`).join('')+'</tbody>')
     : '<tbody><tr><td class="hint">Nenhuma etapa cadastrada ainda.</td></tr></tbody>';
-  el.querySelectorAll('.ed-del').forEach(b=>b.onclick=()=>removerEtapaData(+b.dataset.ano,+b.dataset.etapa));
+  el.querySelectorAll('.ed-del').forEach(b=>b.onclick=()=>removerEtapaData(+b.dataset.ano,+b.dataset.etapa,b.dataset.serie||null));
 }
 async function salvarEtapaData(){
   const msg=$('ed-msg'); msg.className='msg';
   const ano=+$('ed-ano').value, etapa=+$('ed-etapa').value, inicio=$('ed-inicio').value, fim=$('ed-fim').value;
+  const serie = $('ed-serie3').checked ? '3' : null;
   if(!inicio||!fim){ msg.className='msg err'; msg.textContent='Informe início e fim.'; return; }
   if(fim<inicio){ msg.className='msg err'; msg.textContent='A data de fim não pode ser antes do início.'; return; }
   $('ed-btn').disabled=true;
-  const {error}=await sb.from('etapas_datas').upsert({ano,etapa,data_inicio:inicio,data_fim:fim},{onConflict:'ano,etapa'});
+  const {error}=await sb.from('etapas_datas').upsert({ano,etapa,serie,data_inicio:inicio,data_fim:fim},{onConflict:'ano,etapa,serie'});
   $('ed-btn').disabled=false;
   if(error){ msg.className='msg err'; msg.textContent='Erro: '+error.message; return; }
   msg.className='msg ok'; msg.textContent='Salvo.';
   await carregarRefs(); carregarEtapasDatasAdmin();
 }
-async function removerEtapaData(ano,etapa){
-  if(!confirm(`Remover as datas da ${etapa}ª etapa de ${ano}?`)) return;
-  const {error}=await sb.from('etapas_datas').delete().eq('ano',ano).eq('etapa',etapa);
+async function removerEtapaData(ano,etapa,serie){
+  const alvo = serie==='3' ? '3ª série' : 'escola toda';
+  if(!confirm(`Remover as datas da ${etapa}ª etapa de ${ano} (${alvo})?`)) return;
+  let q=sb.from('etapas_datas').delete().eq('ano',ano).eq('etapa',etapa);
+  q = serie ? q.eq('serie',serie) : q.is('serie',null);
+  const {error}=await q;
   if(error){ alert('Erro: '+error.message); return; }
   await carregarRefs(); carregarEtapasDatasAdmin();
 }
