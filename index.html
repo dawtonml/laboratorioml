@@ -305,8 +305,8 @@
 
   <nav>
     <button id="nav-lanc" class="on">Lançar notas</button>
-    <button id="nav-cad">Cadastro</button>
     <button id="nav-red">Redações</button>
+    <button id="nav-cad">Cadastro</button>
     <button id="nav-cons">Consultas</button>
     <button id="nav-admin" class="hide">Admin</button>
   </nav>
@@ -320,12 +320,13 @@
         <button id="t-massa">Importar planilha</button>
         <button id="t-lote" class="hide">Turma em lote</button>
         <button id="t-hor">Horários da turma</button>
-        <button id="t-nomes">Nomes</button>
       </div>
       <div class="panel" id="p-ind">
-        <div class="field"><label for="c-mat">Matrícula do aluno</label>
-          <input id="c-mat" type="text" inputmode="numeric" placeholder="20240137" /></div>
         <div class="grid2">
+          <div><label for="c-mat">Matrícula do aluno</label><input id="c-mat" type="text" inputmode="numeric" placeholder="20240137" /></div>
+          <div><label for="c-nome">Nome do aluno</label><input id="c-nome" type="text" placeholder="João da Silva" /></div>
+        </div>
+        <div class="grid2" style="margin-top:14px">
           <div><label for="c-turma">Turma</label><select id="c-turma"></select></div>
           <div><label for="c-grupo">Grupo</label>
             <select id="c-grupo"><option value="1">Grupo 1</option><option value="2">Grupo 2</option></select></div>
@@ -339,8 +340,8 @@
       </div>
       <div class="panel hide" id="p-massa">
         <p class="hint">Cole os dados da planilha, uma linha por aluno, nesta ordem:</p>
-        <p class="hint mono">matrícula ; turma ; grupo ; horário ; ano</p>
-        <textarea id="m-txt" placeholder="20240137 ; 1A ; 1 ; 14:30 ; 2026"></textarea>
+        <p class="hint mono">matrícula ; nome ; turma ; grupo ; horário ; ano</p>
+        <textarea id="m-txt" placeholder="20240137 ; João da Silva ; 1A ; 1 ; 14:30 ; 2026"></textarea>
         <div class="row-actions"><button id="m-conf">Conferir antes de importar</button></div>
         <div class="previa hide" id="m-previa">
           <div class="stat-row">
@@ -409,22 +410,6 @@
           <div class="row-actions" style="margin-top:10px"><button class="primary" id="hh-salvar">Salvar horários</button><span class="msg" id="hh-salvar-msg"></span></div>
         </div>
       </div>
-      <div class="panel hide" id="p-nomes">
-        <h3>Nomes dos alunos</h3>
-        <p class="hint">Cole ou envie uma planilha com matrícula e nome, um por linha. O sistema associa o nome à matrícula em todos os anos. A matrícula continua sendo a chave; o nome é só exibição.</p>
-        <div class="field"><label for="nm-txt">Matrícula e nome (um por linha, separados por tab, ponto e vírgula ou vírgula)</label>
-          <textarea id="nm-txt" rows="6" placeholder="20240130; João da Silva&#10;20240096; Maria Souza"></textarea></div>
-        <div class="row-actions">
-          <button id="nm-file-btn">Enviar planilha (CSV/XLSX)</button><input id="nm-file" type="file" accept=".csv,.xlsx,.xls" style="display:none">
-          <button id="nm-prever">Pré-visualizar</button>
-          <span class="msg" id="nm-msg"></span>
-        </div>
-        <div id="nm-prev" class="hide">
-          <div class="metrics" id="nm-metrics"></div>
-          <div style="overflow-x:auto"><table class="tbl" id="nm-tbl"></table></div>
-          <div class="row-actions" style="margin-top:10px"><button class="primary" id="nm-aplicar">Atualizar nomes</button><span class="msg" id="nm-aplicar-msg"></span></div>
-        </div>
-      </div>
       <div class="list-head"><h3>Alunos cadastrados</h3><span class="hint" id="l-count"></span></div>
       <div class="filters">
         <select id="l-ano"></select>
@@ -440,6 +425,8 @@
         <button id="rt-uma" class="on">Criar uma</button>
         <button id="rt-massa">Criar em massa</button>
         <button id="rt-plan">Planejamento</button>
+        <button id="rt-temas">Temas aplicados</button>
+        <button id="rt-lista">Redações criadas</button>
       </div>
       <div id="rp-uma">
       <div class="panel">
@@ -514,7 +501,30 @@
         <div class="empty hide" id="pl-empty"></div>
       </div>
 
-      <div id="rl-wrap">
+      <div id="rp-temas" class="hide">
+        <div class="panel">
+          <div class="grid3">
+            <div><label for="tm-ano">Ano</label><select id="tm-ano"></select></div>
+            <div><label for="tm-turma">Turma</label><select id="tm-turma"><option value="">Selecione a turma…</option></select></div>
+            <div><label for="tm-etapa">Etapa</label><select id="tm-etapa"><option value="">Todas as etapas</option></select></div>
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink);margin-top:10px">
+            <input type="checkbox" id="tm-serie-check"> Ver a série inteira
+          </label>
+          <div class="row-actions"><button id="tm-csv" class="hide">Baixar CSV</button></div>
+        </div>
+        <div id="tm-res" class="hide">
+          <div class="panel">
+            <div class="list-head"><h3 id="tm-titulo"></h3><span class="hint" id="tm-sub"></span></div>
+            <p class="sub-note">Todas as redações do filtro, em ordem de data. Edite o eixo e o tema direto na tabela (inclusive as que ainda não têm) e clique em "Salvar alterações".</p>
+            <div style="overflow-x:auto"><table class="tbl" id="tm-tbl"></table></div>
+            <div class="row-actions hide" id="tm-salvar-wrap" style="margin-top:10px"><button class="primary" id="tm-salvar">Salvar alterações</button><span class="msg" id="tm-salvar-msg"></span></div>
+          </div>
+        </div>
+        <div class="empty hide" id="tm-empty">Selecione uma turma para ver os temas.</div>
+      </div>
+
+      <div id="rp-lista" class="hide">
       <div class="list-head"><h3>Redações criadas</h3><span class="hint" id="rl-count"></span></div>
       <div class="filters">
         <select id="rl-ano"></select>
@@ -603,7 +613,7 @@
         <button data-g="desempenho" class="on">Desempenho</button>
         <button data-g="fechamento">Fechamento</button>
         <button data-g="freq">Frequência</button>
-        <button data-g="prog">Programação</button>
+        <button data-g="hor">Horários</button>
       </div>
       <div class="tabs" id="cons-subs"></div>
 
@@ -706,17 +716,40 @@
           <div class="grid3">
             <div><label for="h-ano">Ano</label><select id="h-ano"></select></div>
             <div><label for="h-turma">Turma</label><select id="h-turma"></select></div>
-            <div><label for="h-etapa">Etapa (para os dias)</label><select id="h-etapa"></select></div>
+            <div><label for="h-etapa">Etapa</label><select id="h-etapa"></select></div>
           </div>
           <div class="row-actions">
             <button id="h-print-mh">Folha de horários</button>
             <button id="h-print-dias">Folha de horários com dias</button>
             <button id="h-print">Folha para notas</button>
             <button id="h-cartoes">Cartões de identificação</button>
+            <button id="h-cal-toggle">Ver calendário</button>
           </div>
         </div>
         <div id="h-res"></div>
         <div class="empty hide" id="h-empty">Nenhum aluno ativo nesta turma.</div>
+
+        <div id="h-cal-wrap" class="hide">
+          <div class="panel hide" id="fc-cancel-panel">
+            <h3>Dias sem atendimento</h3>
+            <p class="hint">Registre um dia conhecido de antemão (feriado, evento etc.), mesmo sem nenhuma redação agendada nele. Isso faz o "Preencher datas em sequência" da criação em massa pular esse dia sozinho.</p>
+            <div class="grid3">
+              <div><label for="fc-cancel-data">Data</label><input id="fc-cancel-data" type="date"></div>
+              <div><label for="fc-cancel-motivo">Motivo</label><select id="fc-cancel-motivo"><option value="">Selecione…</option></select></div>
+              <div style="display:flex;align-items:flex-end"><button class="primary" id="fc-cancel-btn" style="width:100%">Marcar</button></div>
+            </div>
+            <div id="fc-cancel-lista" style="margin-top:10px"></div>
+          </div>
+          <div id="fc-res" class="hide">
+            <div class="panel">
+              <div class="list-head"><h3 id="fc-titulo"></h3><span class="hint" id="fc-sub"></span></div>
+              <p class="sub-note">Programação das correções, com o dia de cada grupo. Reflete o calendário da série.</p>
+              <div id="fc-corpo"></div>
+              <div class="row-actions" style="margin-top:10px"><button id="fc-print" class="hide">Imprimir calendário</button></div>
+            </div>
+          </div>
+          <div class="empty hide" id="fc-empty">Nenhuma redação programada para este filtro.</div>
+        </div>
       </div>
 
       <!-- VISÃO 5: EVOLUÇÃO DAS COMPETÊNCIAS -->
@@ -831,60 +864,6 @@
           </div>
         </div>
         <div class="empty hide" id="fe-empty">Nenhuma redação nesta etapa.</div>
-      </div>
-
-      <!-- VISÃO 10: TEMAS APLICADOS -->
-      <div id="cp-temas" class="hide">
-        <div class="panel">
-          <div class="grid3">
-            <div><label for="tm-ano">Ano</label><select id="tm-ano"></select></div>
-            <div><label for="tm-turma">Turma</label><select id="tm-turma"><option value="">Selecione a turma…</option></select></div>
-            <div><label for="tm-etapa">Etapa</label><select id="tm-etapa"><option value="">Todas as etapas</option></select></div>
-          </div>
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink);margin-top:10px">
-            <input type="checkbox" id="tm-serie-check"> Ver a série inteira
-          </label>
-          <div class="row-actions"><button id="tm-csv" class="hide">Baixar CSV</button></div>
-        </div>
-        <div id="tm-res" class="hide">
-          <div class="panel">
-            <div class="list-head"><h3 id="tm-titulo"></h3><span class="hint" id="tm-sub"></span></div>
-            <p class="sub-note">Todas as redações do filtro, em ordem de data. Edite o eixo e o tema direto na tabela (inclusive as que ainda não têm) e clique em "Salvar alterações".</p>
-            <div style="overflow-x:auto"><table class="tbl" id="tm-tbl"></table></div>
-            <div class="row-actions hide" id="tm-salvar-wrap" style="margin-top:10px"><button class="primary" id="tm-salvar">Salvar alterações</button><span class="msg" id="tm-salvar-msg"></span></div>
-          </div>
-        </div>
-        <div class="empty hide" id="tm-empty">Selecione uma turma para ver os temas.</div>
-      </div>
-
-      <!-- VISÃO 9: CALENDÁRIO -->
-      <div id="cp-cal" class="hide">
-        <div class="panel">
-          <div class="grid3">
-            <div><label for="fc-ano">Ano</label><select id="fc-ano"></select></div>
-            <div><label for="fc-turma">Turma</label><select id="fc-turma"></select></div>
-            <div><label for="fc-etapa">Etapa</label><select id="fc-etapa"></select></div>
-          </div>
-          <div class="row-actions"><button id="fc-print" class="hide">Imprimir calendário</button></div>
-        </div>
-        <div class="panel hide" id="fc-cancel-panel">
-          <h3>Dias sem atendimento</h3>
-          <p class="hint">Registre um dia conhecido de antemão (feriado, evento etc.), mesmo sem nenhuma redação agendada nele. Isso faz o "Preencher datas em sequência" da criação em massa pular esse dia sozinho.</p>
-          <div class="grid3">
-            <div><label for="fc-cancel-data">Data</label><input id="fc-cancel-data" type="date"></div>
-            <div><label for="fc-cancel-motivo">Motivo</label><select id="fc-cancel-motivo"><option value="">Selecione…</option></select></div>
-            <div style="display:flex;align-items:flex-end"><button class="primary" id="fc-cancel-btn" style="width:100%">Marcar</button></div>
-          </div>
-          <div id="fc-cancel-lista" style="margin-top:10px"></div>
-        </div>
-        <div id="fc-res" class="hide">
-          <div class="panel">
-            <div class="list-head"><h3 id="fc-titulo"></h3><span class="hint" id="fc-sub"></span></div>
-            <p class="sub-note">Programação das correções, com o dia de cada grupo. Reflete o calendário da série.</p>
-            <div id="fc-corpo"></div>
-          </div>
-        </div>
-        <div class="empty hide" id="fc-empty">Nenhuma redação programada para este filtro.</div>
       </div>
     </section>
 
@@ -1198,6 +1177,7 @@ let NOMES={};
 let ETAPAS_DATAS={};
 function nomeDe(m){ return NOMES[m]||''; }
 function matNome(m){ const n=NOMES[m]; return n? esc(m)+' · '+esc(n) : esc(m); }
+function nomeAluno(m){ const n=NOMES[m]; return n? esc(n) : esc(m); }
 function nomeCurto(n,qtd=3){ if(!n) return ''; return String(n).trim().split(/\s+/).slice(0,qtd).join(' '); }
 function matNomeCurto(m){ const n=NOMES[m]; return n? esc(m)+' · '+esc(nomeCurto(n)) : esc(m); }
 function ordenarAlfa(arr){ return (arr||[]).slice().sort((a,b)=>{ const na=nomeDe(a.matricula)||a.matricula, nb=nomeDe(b.matricula)||b.matricula; return na.localeCompare(nb,'pt-BR',{sensitivity:'base'}); }); }
@@ -1244,9 +1224,9 @@ async function carregarRefs(){
   const optT=turmasVisiveis().map(x=>`<option value="${x.codigo}">${x.nome}</option>`).join('');
   const optA=ANOS.map(x=>`<option value="${x}">${x}</option>`).join('');
   const optTTodas=TURMAS.map(x=>`<option value="${x.codigo}">${x.nome}</option>`).join('');
-  ['c-turma','x-turma','k-turma','q-turma','b-turma','ea-turma','h-turma','pr-turma','pr-dturma','ex-turma','hh-turma','cc-turma','pd-turma','vc-turma','fq-turma','im-turma','fe-turma','fc-turma','ce-turma'].forEach(id=>$(id).innerHTML=optT);
+  ['c-turma','x-turma','k-turma','q-turma','b-turma','ea-turma','h-turma','pr-turma','pr-dturma','ex-turma','hh-turma','cc-turma','pd-turma','vc-turma','fq-turma','im-turma','fe-turma','ce-turma'].forEach(id=>$(id).innerHTML=optT);
   $('tm-turma').innerHTML='<option value="">Selecione a turma…</option>'+optT;
-  ['c-ano','l-ano','r-ano','rl-ano','x-ano','k-ano','q-ano','b-ano','h-ano','pr-ano','pr-dano','ex-ano','hh-ano','cc-ano','pd-ano','fq-ano','im-ano','fe-ano','lb-ano','rm-ano','fc-ano','ce-ano','tm-ano','ed-ano','pl-ano'].forEach(id=>$(id).innerHTML=optA);
+  ['c-ano','l-ano','r-ano','rl-ano','x-ano','k-ano','q-ano','b-ano','h-ano','pr-ano','pr-dano','ex-ano','hh-ano','cc-ano','pd-ano','fq-ano','im-ano','fe-ano','lb-ano','rm-ano','ce-ano','tm-ano','ed-ano','pl-ano'].forEach(id=>$(id).innerHTML=optA);
   $('l-turma').innerHTML='<option value="">Selecione a turma…</option>'+optT;
   // Criar/editar/consultar redações: todas as turmas, mesmo fora do escopo de correção
   // (criar e agendar redações é atividade de professor, não só de corretor; a criação em massa já era assim)
@@ -1296,20 +1276,21 @@ function irPara(sec){
 // ---------- CADASTRO (individual + massa + lista) ----------
 async function salvarAluno(){
   const msg=$('c-msg'); msg.className='msg'; msg.textContent='';
-  const mat=$('c-mat').value.trim(), turma=$('c-turma').value, grupo=+$('c-grupo').value, hora=$('c-hora').value, ano=+$('c-ano').value;
+  const mat=$('c-mat').value.trim(), nome=$('c-nome').value.trim(), turma=$('c-turma').value, grupo=+$('c-grupo').value, hora=$('c-hora').value, ano=+$('c-ano').value;
   if(!/^\d{3,}$/.test(mat)){msg.className='msg err';msg.textContent='Matrícula inválida.';return;}
+  if(!nome){msg.className='msg err';msg.textContent='Informe o nome do aluno.';return;}
   if(!hora){msg.className='msg err';msg.textContent='Informe o horário.';return;}
   $('c-salvar').disabled=true;
-  const erro=await inserirAluno({matricula:mat,ano,turma,grupo,horario:hora});
+  const erro=await inserirAluno({matricula:mat,nome,ano,turma,grupo,horario:hora});
   $('c-salvar').disabled=false;
   if(erro){msg.className='msg err';msg.textContent=erro;return;}
-  msg.className='msg ok'; msg.textContent='Aluno salvo.'; $('c-mat').value='';
+  msg.className='msg ok'; msg.textContent='Aluno salvo.'; $('c-mat').value=''; $('c-nome').value='';
   if(+$('l-ano').value===ano) listarAlunos(); setTimeout(()=>msg.textContent='',2500);
 }
 async function inserirAluno(r){
   const up=await sb.from('alunos').upsert({matricula:r.matricula},{onConflict:'matricula',ignoreDuplicates:true});
   if(up.error) return 'Erro ao gravar aluno: '+up.error.message;
-  const ins=await sb.from('matriculas_ano').insert({matricula:r.matricula,ano:r.ano,turma:r.turma,grupo:r.grupo,horario:r.horario});
+  const ins=await sb.from('matriculas_ano').insert({matricula:r.matricula,ano:r.ano,turma:r.turma,grupo:r.grupo,horario:r.horario,nome:r.nome||null});
   if(ins.error){ if(ins.error.code==='23505') return 'Matrícula já cadastrada neste ano.'; return 'Erro: '+ins.error.message; }
   return null;
 }
@@ -1319,17 +1300,18 @@ function conferir(){
   const det=$('m-detalhe'); det.innerHTML=''; validas=[]; let nOk=0,nEr=0; const vistos={};
   linhas.forEach((l,i)=>{
     const p=l.split(/[;\t]/).map(s=>s.trim());
-    const mat=p[0]||'',turma=(p[1]||'').toUpperCase(),grupo=p[2]||'',hora=p[3]||'',ano=p[4]||''; const probs=[];
+    const mat=p[0]||'',nome=p[1]||'',turma=(p[2]||'').toUpperCase(),grupo=p[3]||'',hora=p[4]||'',ano=p[5]||''; const probs=[];
     if(!/^\d{3,}$/.test(mat))probs.push('matrícula inválida');
-    if(!TURMA_NOME[turma])probs.push('turma "'+(p[1]||'')+'" não existe');
+    if(!nome)probs.push('nome não informado');
+    if(!TURMA_NOME[turma])probs.push('turma "'+(p[2]||'')+'" não existe');
     if(grupo!=='1'&&grupo!=='2')probs.push('grupo deve ser 1 ou 2');
     if(!/^\d{1,2}:\d{2}$/.test(hora))probs.push('horário inválido');
     if(!ANOS.includes(+ano))probs.push('ano "'+ano+'" não existe');
     const ch=mat+'|'+ano; if(!probs.length&&vistos[ch])probs.push('repetida nesta lista'); if(!probs.length)vistos[ch]=true;
     const ok=!probs.length; const d=document.createElement('div'); d.className='line-item '+(ok?'ok':'er');
-    d.textContent = ok?`Linha ${i+1}: ${mat} — ${TURMA_NOME[turma]}, grupo ${grupo}, ${hora}, ${ano}`:`Linha ${i+1}: ${mat||'(sem matrícula)'} — ${probs.join('; ')}`;
+    d.textContent = ok?`Linha ${i+1}: ${mat} · ${nome} — ${TURMA_NOME[turma]}, grupo ${grupo}, ${hora}, ${ano}`:`Linha ${i+1}: ${mat||'(sem matrícula)'} — ${probs.join('; ')}`;
     det.appendChild(d);
-    if(ok){nOk++;validas.push({matricula:mat,turma,grupo:+grupo,horario:hora,ano:+ano});}else nEr++;
+    if(ok){nOk++;validas.push({matricula:mat,nome,turma,grupo:+grupo,horario:hora,ano:+ano});}else nEr++;
   });
   $('m-ok').textContent=nOk; $('m-er').textContent=nEr;
   $('m-imp').classList.toggle('hide',nOk===0); $('m-previa').classList.remove('hide'); $('m-msg').textContent='';
@@ -1430,11 +1412,14 @@ async function salvarRedacao(){
   listarRedacoes(); setTimeout(()=>msg.textContent='',2500);
 }
 function redTab(w){
-  $('rt-uma').classList.toggle('on',w==='uma'); $('rt-massa').classList.toggle('on',w==='massa'); $('rt-plan').classList.toggle('on',w==='plan');
-  $('rp-uma').classList.toggle('hide',w!=='uma'); $('rp-massa').classList.toggle('hide',w!=='massa'); $('rp-plan').classList.toggle('hide',w!=='plan');
-  $('rl-wrap').classList.toggle('hide', w==='plan');
+  ['uma','massa','plan','temas','lista'].forEach(k=>{
+    $('rt-'+k).classList.toggle('on',w===k);
+    $('rp-'+k).classList.toggle('hide',w!==k);
+  });
   if(w==='massa') prepararRedMassa();
   if(w==='plan') prepararPlanejamento();
+  if(w==='temas'){ montarTmEtapa(); consTemas(); }
+  if(w==='lista') listarRedacoes();
 }
 function turmasDaSerie(serie){ return TURMAS.filter(t=>serieDe(t.codigo)===serie).map(t=>t.codigo); }
 function serieRepresentativa(){ return turmasDaSerie($('rm-serie').value)[0]||$('rm-serie').value; }
@@ -2585,26 +2570,31 @@ function eixoBarsHTML(medias){
   }).join('');
 }
 
-function prepararConsultas(){ consCarregarAlunos(); consCarregarRedacoes(); consEtapaOpts(); listarHorarios(); carregarFreqRedacoes(); atualizarEtapasFE(); montarCalEtapa(); montarHEtapa(); consGrupo('desempenho'); }
-const TODAS_SUBS=['aluno','red','comp','eixo','etapa','pend','freq','fetapa','hor','cal','temas'];
+function prepararConsultas(){ consCarregarAlunos(); consCarregarRedacoes(); consEtapaOpts(); listarHorarios(); carregarFreqRedacoes(); atualizarEtapasFE(); montarHEtapa(); consGrupo('desempenho'); }
+const TODAS_SUBS=['aluno','red','comp','eixo','etapa','pend','freq','fetapa'];
 const CONS_GRUPOS={
   desempenho:{subs:[['aluno','Por aluno'],['red','Por redação'],['comp','Por competência'],['eixo','Por eixo']]},
   fechamento:{subs:[['etapa','Boletim da etapa'],['pend','Pendências']]},
   freq:{subs:[['freq','Por redação'],['fetapa','Por etapa']]},
-  prog:{subs:[['hor','Horários'],['cal','Calendário'],['temas','Temas aplicados']]}
+  hor:{subs:[]}
 };
 function consTab(which){
   if(which==='comp') setTimeout(consCompetencias,0);
   if(which==='pend') setTimeout(consPendencias,0);
-  if(which==='cal') setTimeout(consCalendario,0);
   if(which==='eixo') setTimeout(consEixo,0);
-  if(which==='temas') setTimeout(()=>{ montarTmEtapa(); consTemas(); },0);
   TODAS_SUBS.forEach(w=>{ const pn=$('cp-'+w); if(pn) pn.classList.toggle('hide', w!==which); });
   document.querySelectorAll('#cons-subs button').forEach(b=>b.classList.toggle('on', b.dataset.w===which));
 }
 function consGrupo(g){
   document.querySelectorAll('#cons-grupos button').forEach(b=>b.classList.toggle('on', b.dataset.g===g));
   const subs=CONS_GRUPOS[g].subs;
+  if(!subs.length){
+    $('cons-subs').innerHTML=''; $('cons-subs').classList.add('hide');
+    TODAS_SUBS.forEach(w=>{ const pn=$('cp-'+w); if(pn) pn.classList.add('hide'); });
+    $('cp-'+g).classList.remove('hide');
+    return;
+  }
+  $('cons-subs').classList.remove('hide');
   $('cons-subs').innerHTML=subs.map(([w,lb])=>`<button data-w="${w}">${esc(lb)}</button>`).join('');
   $('cons-subs').querySelectorAll('button').forEach(b=>b.onclick=()=>consTab(b.dataset.w));
   consTab(subs[0][0]);
@@ -2915,24 +2905,26 @@ async function imprimirRoster(comDias){
     corpo+=`<div class="sec"><h3>${esc(TURMA_NOME[turma]||turma)} · Grupo ${g}</h3>`;
     const dd = comDias ? (dias[g]||[]) : [];
     if(comDias && dd.length){
-      corpo+='<table class="folha folha-h"><thead><tr><th>Matrícula</th><th>Horário</th>'+dd.map(d=>{
+      corpo+='<table class="folha folha-h folha-nomes"><thead><tr><th>Aluno</th><th>Horário</th>'+dd.map(d=>{
         const motivo=cancelMap[d];
-        if(motivo==='Ajuste de notas') return `<th>${calDia(d)}<br><small>(Ajuste de notas)</small></th>`;
-        if(motivo) return `<th style="text-decoration:line-through">${calDia(d)}<br><small>(${esc(motivo)})</small></th>`;
-        return `<th>${calDia(d)}</th>`;
+        if(motivo==='Ajuste de notas') return `<th>${dataCurta(d)}<br><small>(Ajuste)</small></th>`;
+        if(motivo) return `<th style="text-decoration:line-through">${dataCurta(d)}<br><small>(${esc(motivo)})</small></th>`;
+        return `<th>${dataCurta(d)}</th>`;
       }).join('')+'</tr></thead><tbody>';
-      al.forEach(a=>{ corpo+=`<tr><td class="mono">${matNome(a.matricula)}</td><td>${(a.horario||'').slice(0,5)}</td>${dd.map(()=>'<td></td>').join('')}</tr>`; });
+      al.forEach(a=>{ corpo+=`<tr><td>${nomeAluno(a.matricula)}</td><td>${(a.horario||'').slice(0,5)}</td>${dd.map(()=>'<td></td>').join('')}</tr>`; });
       corpo+='</tbody></table>';
     } else {
       if(comDias) corpo+='<p class="sub-note">Sem datas cadastradas para este grupo neste filtro.</p>';
-      corpo+='<table class="folha folha-h"><thead><tr><th>Matrícula</th><th>Horário</th></tr></thead><tbody>';
-      al.forEach(a=>{ corpo+=`<tr><td class="mono">${matNome(a.matricula)}</td><td>${(a.horario||'').slice(0,5)}</td></tr>`; });
+      corpo+='<table class="folha folha-h folha-nomes"><thead><tr><th>Aluno</th><th>Horário</th></tr></thead><tbody>';
+      al.forEach(a=>{ corpo+=`<tr><td>${nomeAluno(a.matricula)}</td><td>${(a.horario||'').slice(0,5)}</td></tr>`; });
       corpo+='</tbody></table>';
     }
     corpo+='</div>';
   });
   const et = etapa ? ` · ${etapa}ª etapa` : '';
-  abrirImpressao(comDias?'Matrículas, horários e dias':'Matrículas e horários', `${TURMA_NOME[turma]||turma} · ${ano}${comDias?et:''}`, corpo);
+  const cfg = labDaTurma(ano,turma);
+  const diaSemanaTxt = (comDias && cfg && cfg.dia!=null) ? ` · às ${DIAS_SEMANA[cfg.dia].toLowerCase()}s` : '';
+  abrirImpressao(comDias?'Matrículas, horários e dias':'Matrículas e horários', `${TURMA_NOME[turma]||turma} · ${ano}${comDias?et:''}${diaSemanaTxt}`, corpo);
 }
 
 // ---------- LOTE: checklists ----------
@@ -3056,68 +3048,13 @@ async function salvarHorarios(){
   msg.className= err?'msg err':'msg ok';
   msg.textContent=`Salvos ${ok}.${err?(' Erros: '+err+'.'):''}`;
 }
-let nomesValidos=[];
-async function importNomesArquivo(ev){
-  const f=ev.target.files&&ev.target.files[0]; if(!f) return;
-  const msg=$('nm-msg'); msg.className='msg'; msg.textContent='Lendo arquivo…';
-  const fn=f.name.toLowerCase();
-  try{
-    if(fn.endsWith('.xlsx')||fn.endsWith('.xls')){
-      await carregarSheetJS();
-      const buf=await f.arrayBuffer(); const wb=XLSX.read(buf,{type:'array'});
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      const linhas=XLSX.utils.sheet_to_json(ws,{header:1,blankrows:false});
-      $('nm-txt').value=linhas.map(r=>(r||[]).slice(0,2).join('\t')).join('\n');
-    } else { $('nm-txt').value=await f.text(); }
-    msg.textContent=''; preverNomes();
-  }catch(e){ msg.className='msg err'; msg.textContent=String(e.message||e); }
-  ev.target.value='';
-}
-function parseNomeLinha(ln){
-  const m=ln.match(/^\s*(\d{3,})\s*[\t;,]\s*(.+?)\s*$/);
-  return m ? {mat:m[1], nome:m[2].trim()} : null;
-}
-async function preverNomes(){
-  const msg=$('nm-msg'); msg.className='msg'; msg.textContent='';
-  const {data:mats}=await sb.from('matriculas_ano').select('matricula');
-  const matSet=new Set((mats||[]).map(m=>m.matricula));
-  const linhas=$('nm-txt').value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
-  const rows=[];
-  linhas.forEach(ln=>{ const pp=parseNomeLinha(ln); if(pp) rows.push({mat:pp.mat, nome:pp.nome, existe:matSet.has(pp.mat)}); });
-  if(!rows.length){ msg.className='msg err'; msg.textContent='Nenhuma linha válida. Use: matrícula, nome (um por linha).'; $('nm-prev').classList.add('hide'); return; }
-  nomesValidos=rows.filter(r=>r.existe && r.nome);
-  const naoAch=rows.filter(r=>!r.existe).length;
-  $('nm-metrics').innerHTML=metricsHTML([
-    {n:rows.length,l:'Linhas lidas'},
-    {n:nomesValidos.length,l:'Prontas para atualizar',color:'var(--brand2)'},
-    {n:naoAch,l:'Matrícula não encontrada',color:naoAch?'var(--danger)':null}
-  ]);
-  let h='<thead><tr><th>Matrícula</th><th>Nome</th><th>Situação</th></tr></thead><tbody>';
-  rows.forEach(r=>{ h+=`<tr><td class="mono">${esc(r.mat)}</td><td>${esc(r.nome)}</td><td>${r.existe?'<span class="st corrigida">encontrada</span>':'<span class="st falta">não encontrada</span>'}</td></tr>`; });
-  h+='</tbody>'; $('nm-tbl').innerHTML=h;
-  $('nm-prev').classList.remove('hide');
-}
-async function aplicarNomes(){
-  const msg=$('nm-aplicar-msg'); msg.className='msg';
-  if(!nomesValidos.length){ msg.className='msg err'; msg.textContent='Nada para atualizar.'; return; }
-  $('nm-aplicar').disabled=true; msg.textContent='Atualizando…';
-  let ok=0, err=0;
-  for(const r of nomesValidos){
-    const {error}=await sb.from('matriculas_ano').update({nome:r.nome}).eq('matricula',r.mat);
-    if(error) err++; else ok++;
-  }
-  $('nm-aplicar').disabled=false;
-  msg.className= err?'msg err':'msg ok';
-  msg.textContent=`Nomes atualizados: ${ok}.${err?(' Erros: '+err+'.'):''}`;
-}
 function cadTab(w){
-  ['ind','massa','lote','hor','nomes'].forEach(k=>$('t-'+k).classList.toggle('on',k===w));
+  ['ind','massa','lote','hor'].forEach(k=>$('t-'+k).classList.toggle('on',k===w));
   $('p-ind').classList.toggle('hide',w!=='ind');
   $('p-massa').classList.toggle('hide',w!=='massa');
   $('p-lote').classList.toggle('hide',w!=='lote');
   $('p-lote2').classList.toggle('hide',w!=='lote');
   $('p-hor').classList.toggle('hide',w!=='hor');
-  $('p-nomes').classList.toggle('hide',w!=='nomes');
 }
 
 // ==================================================================
@@ -3464,6 +3401,7 @@ const CSS_IMPRESSAO = `
   table.folha th, table.folha td{border:1px solid var(--line)} table.folha td{height:30px}
   table.folha-h{table-layout:fixed}
   table.folha-h th:first-child, table.folha-h td:first-child{width:170px;overflow:hidden;text-overflow:ellipsis}
+  table.folha-h.folha-nomes th:first-child, table.folha-h.folha-nomes td:first-child{width:320px}
   table.folha-h th:nth-child(2), table.folha-h td:nth-child(2){width:70px}
   .pill{display:inline-block;padding:2px 8px;border-radius:12px;font-weight:700;font-size:12px}
   .pill.f-ok{background:var(--ok-soft);color:var(--brand2-ink)} .pill.f-md{background:var(--warn-soft);color:var(--warn)}
@@ -3642,7 +3580,13 @@ async function consEixo(){
 }
 // ---------- CALENDÁRIO ----------
 let calData=null;
-function montarCalEtapa(){ $('fc-etapa').innerHTML='<option value="">Todas as etapas</option>'+opcoesEtapa($('fc-turma').value); }
+let calVisivel=false;
+function toggleCalendario(){
+  calVisivel=!calVisivel;
+  $('h-cal-wrap').classList.toggle('hide', !calVisivel);
+  $('h-cal-toggle').textContent = calVisivel ? 'Ocultar calendário' : 'Ver calendário';
+  if(calVisivel){ consCalendario(); carregarDiasCancelados(); }
+}
 function calDia(iso){ if(!iso) return '—'; const d=diaDaData(iso); const ab=['dom','seg','ter','qua','qui','sex','sáb'][d]; return `${dataBR(iso)} (${ab})`; }
 const MOTIVOS_CANCELAMENTO=['Feriado','Preparação para evento','Semana de AVBs'];
 function calCorpo(reds, turma, cancelMap){
@@ -3668,7 +3612,7 @@ function calCorpo(reds, turma, cancelMap){
 }
 function opcoesMotivoCancelamento(){ return '<option value="">Selecione…</option>'+MOTIVOS_CANCELAMENTO.map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join('')+'<option value="__outro__">Outro motivo…</option>'; }
 async function carregarDiasCancelados(){
-  const ano=+$('fc-ano').value, turma=$('fc-turma').value;
+  const ano=+$('h-ano').value, turma=$('h-turma').value;
   if(!turma){ $('fc-cancel-panel').classList.add('hide'); return; }
   $('fc-cancel-motivo').innerHTML=opcoesMotivoCancelamento();
   $('fc-cancel-panel').classList.remove('hide');
@@ -3679,7 +3623,7 @@ async function carregarDiasCancelados(){
   el.querySelectorAll('.fc-cancel-del').forEach(b=>b.onclick=()=>removerDiaCancelado(b.dataset.data));
 }
 async function marcarDiaCanceladoManual(){
-  const ano=+$('fc-ano').value, turma=$('fc-turma').value;
+  const ano=+$('h-ano').value, turma=$('h-turma').value;
   const data=$('fc-cancel-data').value;
   let motivo=$('fc-cancel-motivo').value;
   if(!turma){ alert('Escolha a turma.'); return; }
@@ -3691,12 +3635,12 @@ async function marcarDiaCanceladoManual(){
   carregarDiasCancelados(); consCalendario();
 }
 async function removerDiaCancelado(data){
-  const ano=+$('fc-ano').value, turma=$('fc-turma').value;
+  const ano=+$('h-ano').value, turma=$('h-turma').value;
   await sb.from('dias_cancelados').delete().eq('ano',ano).eq('turma',turma).eq('data',data);
   carregarDiasCancelados(); consCalendario();
 }
 async function consCalendario(){
-  const ano=+$('fc-ano').value, turma=$('fc-turma').value, etapa=$('fc-etapa').value;
+  const ano=+$('h-ano').value, turma=$('h-turma').value, etapa=$('h-etapa').value;
   let q=sb.from('redacoes').select('id,rotulo,data,data_g1,data_g2,banca,tipo,etapa').eq('ano',ano).eq('turma',turma).eq('correcao_externa',false);
   if(etapa) q=q.eq('etapa',+etapa);
   const [{data:reds}, {data:cancelados}] = await Promise.all([
@@ -3874,7 +3818,7 @@ $('sair').onclick=sair;
 $('nav-cad').onclick=()=>irPara('cad'); $('nav-red').onclick=()=>irPara('red'); $('nav-lanc').onclick=()=>irPara('lanc'); $('nav-cons').onclick=()=>irPara('cons'); $('nav-admin').onclick=()=>irPara('admin');
 $('ad-criar').onclick=criarLogin; $('ts-btn').onclick=trocarSenha; $('an-btn').onclick=abrirAno;
 document.querySelectorAll('#cons-grupos button').forEach(b=>b.onclick=()=>consGrupo(b.dataset.g));
-$('fc-ano').onchange=()=>{ consCalendario(); carregarDiasCancelados(); }; $('fc-turma').onchange=()=>{ montarCalEtapa(); consCalendario(); carregarDiasCancelados(); }; $('fc-etapa').onchange=consCalendario; $('fc-print').onclick=imprimirCalendario; $('fc-cancel-btn').onclick=marcarDiaCanceladoManual;
+$('fc-print').onclick=imprimirCalendario; $('fc-cancel-btn').onclick=marcarDiaCanceladoManual;
 $('ce-ano').onchange=consEixo; $('ce-turma').onchange=consEixo;
 $('tm-ano').onchange=consTemas; $('tm-turma').onchange=()=>{ montarTmEtapa(); consTemas(); }; $('tm-etapa').onchange=consTemas; $('tm-serie-check').onchange=consTemas; $('tm-csv').onclick=baixarTemasCSV; $('tm-salvar').onclick=salvarTemasMassa;
 $('fe-turma').onchange=atualizarEtapasFE; $('fe-gerar').onclick=consFreqEtapa; $('fe-print').onclick=imprimirFreqEtapa;
@@ -3891,7 +3835,7 @@ $('tz-btn').onclick=adicionarTurma;
 document.querySelectorAll('#admin-tabs button').forEach(b=>b.onclick=()=>adminTab(b.dataset.w));
 $('lb-btn').onclick=salvarLab; $('lb-ano').onchange=preencherLabForm; $('lb-turma').onchange=preencherLabForm; $('ed-btn').onclick=salvarEtapaData; $('er-data-g1').onchange=avisoDatasEdit; $('er-data-g2').onchange=avisoDatasEdit; $('er-tipo').onchange=togglePenRowEdit; $('er-banca').onchange=togglePenRowEdit; $('er-externa').onchange=toggleExternaEdit;
 $('er-rotulo').onchange=()=>{ const rr=$('er-rotulo').value; if(rr==='AVP'||rr==='AVB')$('er-tipo').value='prova'; togglePenRowEdit(); };
-$('h-ano').onchange=listarHorarios; $('h-turma').onchange=()=>{ montarHEtapa(); listarHorarios(); }; $('h-etapa').onchange=listarHorarios;
+$('h-ano').onchange=()=>{ listarHorarios(); if(calVisivel){ consCalendario(); carregarDiasCancelados(); } }; $('h-turma').onchange=()=>{ montarHEtapa(); listarHorarios(); if(calVisivel){ consCalendario(); carregarDiasCancelados(); } }; $('h-etapa').onchange=()=>{ listarHorarios(); if(calVisivel) consCalendario(); }; $('h-cal-toggle').onclick=toggleCalendario;
 $('h-print-mh').onclick=()=>imprimirRoster(false); $('h-print-dias').onclick=()=>imprimirRoster(true);
 $('k-ano').onchange=consCarregarAlunos; $('k-turma').onchange=consCarregarAlunos; $('k-aluno').onchange=consAluno;
 $('q-ano').onchange=consCarregarRedacoes; $('q-turma').onchange=consCarregarRedacoes; $('q-red').onchange=consRedacao;
@@ -3906,7 +3850,7 @@ $('r-turma').onchange=()=>{ atualizarRotulos(); prefillDatasRedacao(); }; $('r-a
 $('r-rotulo').onchange=()=>{ sugerirBanca(); togglePenRow(); }; $('r-tipo').onchange=togglePenRow; $('r-banca').onchange=togglePenRow; $('r-salvar').onclick=salvarRedacao; $('r-externa').onchange=toggleExterna;
 $('r-pen-abrir').onclick=abrirPenalidade; $('r-pen-fechar').onclick=fecharPenalidade;
 $('er-pen-abrir').onclick=abrirPenalidadeEdit; $('er-pen-fechar').onclick=fecharPenalidadeEdit;
-$('rt-uma').onclick=()=>redTab('uma'); $('rt-massa').onclick=()=>redTab('massa'); $('rt-plan').onclick=()=>redTab('plan');
+$('rt-uma').onclick=()=>redTab('uma'); $('rt-massa').onclick=()=>redTab('massa'); $('rt-plan').onclick=()=>redTab('plan'); $('rt-temas').onclick=()=>redTab('temas'); $('rt-lista').onclick=()=>redTab('lista');
 $('rm-serie').onchange=()=>{ montarRmEtapa(); montarRmTurmasHint(); rmHeader(); addRmRow(); }; $('rm-add').onclick=addRmRow; $('rm-datas').onclick=rmSequenciaDatas; $('rm-criar').onclick=criarEmMassa;
 $('pl-turma').onchange=()=>{ montarPlanEtapa(); carregarPlanejamento(); }; $('pl-ano').onchange=carregarPlanejamento; $('pl-etapa').onchange=carregarPlanejamento; $('pl-salvar').onclick=salvarPlanejamento; $('pl-duplicar').onclick=duplicarPlanejamento;
 $('rl-ano').onchange=listarRedacoes; $('rl-turma').onchange=()=>{ montarRlEtapa(); listarRedacoes(); }; $('rl-etapa').onchange=listarRedacoes; $('rl-serie').onchange=listarRedacoes;
@@ -3924,7 +3868,6 @@ $('ea-turma').onchange=()=>{ if(alunoEdit) $('ea-turma-aviso').classList.toggle(
 $('ea-cancel').onclick=()=>$('ov-aluno').classList.add('hide');
 $('ea-salvar').onclick=salvarEditarAluno;
 $('t-hor').onclick=()=>cadTab('hor'); $('hh-gerar').onclick=montarHorariosLista; $('hh-salvar').onclick=salvarHorarios;
-$('t-nomes').onclick=()=>cadTab('nomes'); $('nm-prever').onclick=preverNomes; $('nm-aplicar').onclick=aplicarNomes; $('nm-file-btn').onclick=()=>$('nm-file').click(); $('nm-file').onchange=importNomesArquivo;
 $('hh-turma').onchange=()=>$('hh-wrap').classList.add('hide'); $('hh-grupo').onchange=()=>$('hh-wrap').classList.add('hide');
 $('ov-aluno').addEventListener('click',e=>{if(e.target===$('ov-aluno'))$('ov-aluno').classList.add('hide');});
 
