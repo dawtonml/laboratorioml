@@ -93,6 +93,9 @@
 
   .item{display:flex;align-items:center;gap:12px;background:var(--card);
     border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px;margin-bottom:8px}
+  .item.item-presente{background:var(--ok-soft);border-color:var(--brand2)}
+  .item.item-falta{background:var(--danger-soft);border-color:var(--danger)}
+  .item.item-justif{background:var(--warn-soft);border-color:var(--warn)}
   .item .av{width:40px;height:40px;border-radius:8px;background:var(--accent-soft);
     display:flex;align-items:center;justify-content:center;color:var(--accent-ink);flex-shrink:0;font-weight:600;font-size:13px}
   .item .info{flex:1;min-width:0}
@@ -272,6 +275,24 @@
   .pl-status.pendente{background:#FBF6E9;color:#8A6D1B}
   .pl-status.ajuste{background:var(--accent-soft);color:var(--accent-ink)}
   .pl-status.cancel{background:var(--danger-soft);color:var(--danger)}
+  .btn-cal{width:30px;height:30px;border-radius:8px;border:1px solid var(--accent);background:var(--card);
+    color:var(--accent-ink);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;flex:none}
+  .btn-cal:hover{background:var(--accent-soft)}
+  .mini-cal{position:absolute;top:38px;left:0;background:var(--card);border:1px solid var(--line-strong);border-radius:12px;
+    box-shadow:0 8px 24px rgba(0,0,0,.15);padding:14px;width:280px;z-index:20}
+  .mc-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .mc-nav button{background:none;border:none;cursor:pointer;font-size:16px;color:var(--accent-ink);width:26px;height:26px;border-radius:6px}
+  .mc-nav button:hover{background:var(--accent-soft)}
+  .mc-nav .mes{font-family:'Spectral',serif;font-weight:600;font-size:14px;text-transform:capitalize}
+  .mc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+  .mc-grid .wd{font-size:10.5px;color:var(--muted);font-weight:600;padding-bottom:4px}
+  .mc-dia{padding:6px 0;border-radius:8px;font-size:13px;cursor:pointer;border:1px solid transparent;color:var(--ink)}
+  .mc-dia:hover{background:var(--accent-soft)}
+  .mc-dia.tem-red{background:var(--ok-soft);color:var(--brand2-ink);font-weight:600}
+  .mc-dia.hoje{border-color:var(--accent)}
+  .mc-dia.selecionado{background:var(--accent);color:#fff}
+  .mc-legenda{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);margin-top:10px}
+  .mc-legenda .dot{width:8px;height:8px;border-radius:50%;background:var(--brand2);flex:none}
   .crit-block{margin-bottom:14px}
   .crit-block-tit{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px}
   .crit-row-blocos{display:flex;flex-wrap:wrap;gap:8px}
@@ -503,6 +524,15 @@
 
       <div id="rp-temas" class="hide">
         <div class="panel">
+          <h3>Buscar tema já usado</h3>
+          <p class="hint">Digite uma palavra do tema para ver se ele já foi aplicado em alguma turma, e onde.</p>
+          <div class="row-actions">
+            <input id="tm-busca" type="text" placeholder="Ex.: inteligência artificial" style="flex:1;min-width:220px">
+            <button class="primary" id="tm-busca-btn">Buscar</button>
+          </div>
+          <div id="tm-busca-res" style="margin-top:10px"></div>
+        </div>
+        <div class="panel">
           <div class="grid3">
             <div><label for="tm-ano">Ano</label><select id="tm-ano"></select></div>
             <div><label for="tm-turma">Turma</label><select id="tm-turma"><option value="">Selecione a turma…</option></select></div>
@@ -545,7 +575,22 @@
       </div>
       <div id="lp-manual">
       <div class="panel" id="hoje-box" style="background:var(--accent-soft);border-color:var(--accent)">
-        <div class="list-head"><h3 id="hoje-data" style="color:var(--accent-ink)"></h3><span class="hint" id="hoje-count"></span></div>
+        <div class="list-head" style="position:relative">
+          <div style="display:flex;align-items:center;gap:8px">
+            <button type="button" class="btn-cal" id="hoje-cal-btn" title="Ver outro dia">📅</button>
+            <h3 id="hoje-data" style="color:var(--accent-ink);margin:0"></h3>
+          </div>
+          <span class="hint" id="hoje-count"></span>
+          <div class="mini-cal hide" id="mini-cal">
+            <div class="mc-nav">
+              <button type="button" id="mc-prev">‹</button>
+              <span class="mes" id="mc-mes"></span>
+              <button type="button" id="mc-next">›</button>
+            </div>
+            <div class="mc-grid" id="mc-grid"></div>
+            <div class="mc-legenda"><span class="dot"></span> dias com redação agendada</div>
+          </div>
+        </div>
         <div id="hoje-lista"></div>
       </div>
       <div class="panel">
@@ -573,6 +618,7 @@
           </div>
         </div>
         <div class="hint" style="margin:0 0 10px">Clique num aluno para lançar. A lista segue a ordem dos horários.</div>
+        <div class="row-actions" style="margin-bottom:10px"><button id="x-marcar-faltas" style="border-color:var(--danger);color:var(--danger)">Marcar pendentes como falta</button></div>
         <div id="x-lista"></div>
         <div class="empty hide" id="x-empty">Nenhum aluno neste grupo.</div>
       </div>
@@ -1145,7 +1191,7 @@ function ordRotulo(rot, ordem){
   if(m && ordem[m[1]]!=null) return ordem[m[1]] + (+m[2])/100;
   return 999;
 }
-const MOTIVOS_ZERO = ['Fuga total ao tema','Não atendimento ao tipo textual','Texto insuficiente','Cópia integral dos textos motivadores','Fere os direitos humanos','Texto em branco','Anulado (desenhos, impropérios, identificação)'];
+const MOTIVOS_ZERO = ['Fuga total ao tema','Não atendimento ao tipo textual','Texto insuficiente','Cópia integral dos textos motivadores','Fere os direitos humanos','Texto em branco','Anulado (desenhos, impropérios, identificação)','Desempenho insuficiente'];
 const ENEM_VALS = [0,40,80,120,160,200];
 const AVAL_OPCOES=[['excelente','Excelente'],['satisfatoria','Satisfatória'],['mediana','Mediana'],['incompleta','Incompleta'],['nao_realizada','Não realizada']];
 function avalLabel(k){ const o=AVAL_OPCOES.find(x=>x[0]===k); if(o)return o[1]; return k==='inconclusa'?'Inconclusa':''; }
@@ -1611,12 +1657,6 @@ function rotuloUsadoEmPlan(rotulo,grupo,exceto){
   // conflita se for o mesmo grupo, ou se qualquer um dos dois lados for "sem grupo" (vale para os dois grupos)
   return planLinhas.findIndex((l,i)=> i!==exceto && l.rotulo===rotulo && (l.grupo===grupo || !l.grupo || !grupo));
 }
-function statusPlanHTML(ln){
-  if(ln.cancelado) return '<span class="pl-status cancel">Sem atendimento</span>';
-  if(ln.ajuste) return '<span class="pl-status ajuste">Ajuste de notas</span>';
-  if(ln.rotulo) return '<span class="pl-status ok">Planejada</span>';
-  return '<span class="pl-status pendente">Não planejada</span>';
-}
 function grpPlanCel(ln,i){
   if(ln.cancelado) return '<select disabled><option>—</option></select>';
   const opts=[
@@ -1766,6 +1806,11 @@ function duplicarPlanejamento(){
     alvo=encontrada;
   }
   const ano=+$('pl-ano').value;
+  const cfgAtual=labDaTurma(ano,turmaAtual), cfgAlvo=labDaTurma(ano,alvo);
+  if(cfgAtual && cfgAlvo && cfgAtual.dia!=null && cfgAlvo.dia!=null && cfgAtual.dia!==cfgAlvo.dia){
+    const ok=confirm(`Atenção: ${TURMA_NOME[turmaAtual]||turmaAtual} tem laboratório às ${DIAS_SEMANA[cfgAtual.dia].toLowerCase()}s, mas ${TURMA_NOME[alvo]||alvo} tem às ${DIAS_SEMANA[cfgAlvo.dia].toLowerCase()}s. As linhas não correspondem às mesmas datas — copiar por posição pode colocar o rótulo em um dia errado.\n\nContinuar mesmo assim? Confira cada data com atenção depois.`);
+    if(!ok) return;
+  }
   const copia = planLinhas.map(l=>({...l, redId:null, editando:false}));
   $('pl-turma').value=alvo;
   montarPlanEtapa(); $('pl-etapa').value=String(+$('pl-etapa').value)||$('pl-etapa').value;
@@ -1825,21 +1870,24 @@ function atualizarEtapasLancar(){
   $('x-etapa').innerHTML='<option value="">Todas as etapas</option>'+opcoesEtapa(turma);
   if(atual && +atual<=nEtapas(turma)) $('x-etapa').value=atual;
 }
+let diaPainelHoje=null; // null = hoje; senão, string ISO do dia escolhido no minicalendário
 async function montarHoje(){
-  const hoje=hojeISO();
-  const d=new Date();
+  const alvo=diaPainelHoje||hojeISO();
+  const ehHoje=!diaPainelHoje;
+  const d=ehHoje ? new Date() : new Date(alvo+'T00:00:00');
   let ext=d.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   ext=ext.charAt(0).toUpperCase()+ext.slice(1);
-  $('hoje-data').textContent=ext;
+  $('hoje-data').innerHTML = esc(ext) + (ehHoje?'':' <button type="button" class="linklike" id="hoje-voltar" style="font-size:12px;margin-left:6px">Voltar para hoje</button>');
+  if(!ehHoje) $('hoje-voltar').onclick=()=>{ diaPainelHoje=null; montarHoje(); };
   const lista=$('hoje-lista'); lista.innerHTML='';
   let q=sb.from('redacoes').select('id,ano,turma,rotulo,banca,tipo,etapa,data,data_g1,data_g2')
     .eq('correcao_externa',false)
-    .or(`data_g1.eq.${hoje},data_g2.eq.${hoje},data.eq.${hoje}`);
+    .or(`data_g1.eq.${alvo},data_g2.eq.${alvo},data.eq.${alvo}`);
   if(minhasTurmas&&minhasTurmas.length) q=q.in('turma',minhasTurmas);
   const {data}=await q;
   const reds=data||[];
-  if(!reds.length){ $('hoje-count').textContent='sem correções hoje'; lista.innerHTML='<div class="hint" style="margin:0">Nenhuma redação programada para correção hoje.</div>'; return; }
-  $('hoje-count').textContent=`${reds.length} ${reds.length===1?'redação':'redações'} para hoje`;
+  if(!reds.length){ $('hoje-count').textContent= ehHoje?'sem correções hoje':'sem correções neste dia'; lista.innerHTML=`<div class="hint" style="margin:0">Nenhuma redação programada para correção ${ehHoje?'hoje':'neste dia'}.</div>`; return; }
+  $('hoje-count').textContent=`${reds.length} ${reds.length===1?'redação':'redações'}${ehHoje?' para hoje':''}`;
   reds.sort((a,b)=> (a.turma<b.turma?-1:a.turma>b.turma?1:0));
   const ids=reds.map(r=>r.id);
   const anos=[...new Set(reds.map(r=>r.ano))], turmas=[...new Set(reds.map(r=>r.turma))];
@@ -1848,12 +1896,12 @@ async function montarHoje(){
     sb.from('lancamentos').select('redacao_id,matricula,frequencia').in('redacao_id',ids)
   ]);
   reds.forEach(r=>{
-    const g1=r.data_g1===hoje, g2=r.data_g2===hoje;
+    const g1=r.data_g1===alvo, g2=r.data_g2===alvo;
     let gtxt='', grupo=null, grupos;
     if(g1&&g2){ gtxt='Grupos 1 e 2'; grupos=[1,2]; }
     else if(g1){ gtxt='Grupo 1'; grupo=1; grupos=[1]; }
     else if(g2){ gtxt='Grupo 2'; grupo=2; grupos=[2]; }
-    else { gtxt='Correção hoje'; grupos=[1,2]; }
+    else { gtxt='Correção nesse dia'; grupos=[1,2]; }
     const matSet=new Set((mats||[]).filter(m=>m.ano===r.ano && m.turma===r.turma && grupos.includes(m.grupo)).map(m=>m.matricula));
     const lr=(lancs||[]).filter(l=>l.redacao_id===r.id && matSet.has(l.matricula));
     const total=matSet.size;
@@ -1870,6 +1918,51 @@ async function montarHoje(){
       <div><span class="st corrigida">abrir</span></div>`;
     el.onclick=()=>irParaRedacaoHoje(r,grupo);
     lista.appendChild(el);
+  });
+}
+let miniCalMes=null, miniCalAno=null;
+function isoDia(y,m,d){ return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+async function toggleMiniCal(){
+  const cal=$('mini-cal');
+  if(!cal.classList.contains('hide')){ cal.classList.add('hide'); return; }
+  const base = diaPainelHoje ? new Date(diaPainelHoje+'T00:00:00') : new Date();
+  miniCalMes=base.getMonth(); miniCalAno=base.getFullYear();
+  await renderMiniCal();
+  cal.classList.remove('hide');
+}
+async function renderMiniCal(){
+  let q=sb.from('redacoes').select('data_g1,data_g2,data').eq('correcao_externa',false).eq('ano',miniCalAno);
+  if(minhasTurmas&&minhasTurmas.length) q=q.in('turma',minhasTurmas);
+  const {data}=await q;
+  const inicioMes=isoDia(miniCalAno,miniCalMes,1);
+  const fimMes=isoDia(miniCalAno,miniCalMes,new Date(miniCalAno,miniCalMes+1,0).getDate());
+  const diasComRed=new Set();
+  (data||[]).forEach(r=>{ [r.data_g1,r.data_g2,r.data].forEach(dd=>{ if(dd && dd>=inicioMes && dd<=fimMes) diasComRed.add(dd); }); });
+
+  const primeiroDia=new Date(miniCalAno,miniCalMes,1);
+  let nomeMes=primeiroDia.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  nomeMes=nomeMes.charAt(0).toUpperCase()+nomeMes.slice(1);
+  $('mc-mes').textContent=nomeMes;
+  const hojeIso=hojeISO();
+  const selecionado=diaPainelHoje||hojeIso;
+  const offset=primeiroDia.getDay();
+  const diasNoMes=new Date(miniCalAno,miniCalMes+1,0).getDate();
+  let html=['D','S','T','Q','Q','S','S'].map(w=>`<div class="wd">${w}</div>`).join('');
+  for(let i=0;i<offset;i++) html+='<div></div>';
+  for(let dd=1; dd<=diasNoMes; dd++){
+    const iso=isoDia(miniCalAno,miniCalMes,dd);
+    const cls=['mc-dia'];
+    if(diasComRed.has(iso)) cls.push('tem-red');
+    if(iso===hojeIso) cls.push('hoje');
+    if(iso===selecionado) cls.push('selecionado');
+    html+=`<div class="${cls.join(' ')}" data-iso="${iso}">${dd}</div>`;
+  }
+  $('mc-grid').innerHTML=html;
+  $('mc-grid').querySelectorAll('.mc-dia').forEach(el=>el.onclick=()=>{
+    const iso=el.dataset.iso;
+    diaPainelHoje = iso===hojeIso ? null : iso;
+    $('mini-cal').classList.add('hide');
+    montarHoje();
   });
 }
 async function irParaRedacaoHoje(r,grupo){
@@ -1897,7 +1990,7 @@ async function abrirRedacao(){
   const {data}=await sb.from('redacoes').select('*').eq('id',id).single();
   redAtual=data;
   $('lanc-titulo').textContent=`${data.rotulo} · ${TURMA_NOME[data.turma]||data.turma}`;
-  $('lanc-sub').innerHTML=`${data.data.split('-').reverse().join('/')} · <span class="red-chip">${data.banca}</span> · ${data.tipo==='prova'?'Prova':'Comum'}${data.etapa?' · '+data.etapa+'ª etapa':''}`;
+  $('lanc-sub').innerHTML=`${data.data.split('-').reverse().join('/')} · <span class="red-chip">${data.banca}</span> · ${data.tipo==='prova'?'Prova':'Comum'}${data.etapa?' · '+data.etapa+'ª etapa':''}${data.eixo_tematico?' · '+eixoChip(data.eixo_tematico):''}${data.tema?' · <span style="font-style:italic;color:var(--muted)">'+esc(data.tema)+'</span>':''}`;
   $('lanc-area').classList.remove('hide');
   listarParaLancar();
 }
@@ -1911,15 +2004,15 @@ async function listarParaLancar(){
   const lista=$('x-lista'); lista.innerHTML='';
   $('x-empty').classList.toggle('hide',(alunos||[]).length>0);
   (alunos||[]).forEach(a=>{
-    const l=porMat[a.matricula]; let st='<span class="st pend">Pendente</span>';
+    const l=porMat[a.matricula]; let st='<span class="st pend">Pendente</span>'; let statusCls='';
     if(l){
-      if(l.frequencia==='presente') st='<span class="st pres">Presente</span>';
-      else if(l.frequencia==='falta') st='<span class="st falta">Falta</span>';
-      else if(l.frequencia==='falta_justificada') st='<span class="st justif">Falta just.</span>';
+      if(l.frequencia==='presente'){ st='<span class="st pres">Presente</span>'; statusCls='item-presente'; }
+      else if(l.frequencia==='falta'){ st='<span class="st falta">Falta</span>'; statusCls='item-falta'; }
+      else if(l.frequencia==='falta_justificada'){ st='<span class="st justif">Falta just.</span>'; statusCls='item-justif'; }
       if(redAtual.banca==='Atividade'){ if(l.avaliacao) st+=` <span class="st corrigida">${avalLabel(l.avaliacao)}</span>`; }
       else if(l.nota_final!=null) st+=` <span class="st corrigida">Nota ${(+l.nota_final).toFixed(1).replace('.',',')}</span>`;
     }
-    const d=document.createElement('div'); d.className='item clic';
+    const d=document.createElement('div'); d.className='item clic'+(statusCls?' '+statusCls:'');
     d.innerHTML=`<div class="av">${a.matricula.slice(-3)}</div>
       <div class="info"><div class="m">${matNomeCurto(a.matricula)}</div>
       <div class="sub">Grupo ${a.grupo} · ${(a.horario||'').slice(0,5)}</div></div>
@@ -1927,6 +2020,25 @@ async function listarParaLancar(){
     d.onclick=()=>abrirModal(a);
     lista.appendChild(d);
   });
+}
+async function marcarPendentesFalta(){
+  if(!redAtual) return;
+  const grupo=$('x-grupo').value;
+  let q=sb.from('matriculas_ano').select('matricula,grupo').eq('ano',redAtual.ano).eq('turma',redAtual.turma).eq('ativo',true);
+  if(grupo) q=q.eq('grupo',+grupo);
+  const {data:alunos}=await q;
+  const {data:lancs}=await sb.from('lancamentos').select('matricula').eq('redacao_id',redAtual.id);
+  const jaLancado=new Set((lancs||[]).map(l=>l.matricula));
+  const pendentes=(alunos||[]).filter(a=>!jaLancado.has(a.matricula));
+  if(!pendentes.length){ alert('Não há alunos pendentes neste filtro.'); return; }
+  if(!confirm(`Marcar ${pendentes.length} aluno${pendentes.length>1?'s':''} pendente${pendentes.length>1?'s':''} como falta?`)) return;
+  const btn=$('x-marcar-faltas'); btn.disabled=true; const txt=btn.textContent; btn.textContent='Marcando…';
+  const registros=pendentes.map(a=>({redacao_id:redAtual.id, matricula:a.matricula, frequencia:'falta', criado_por:perfil?perfil.login:null, atualizado_em:new Date().toISOString()}));
+  const {error}=await sb.from('lancamentos').upsert(registros,{onConflict:'redacao_id,matricula'});
+  btn.disabled=false; btn.textContent=txt;
+  if(error){ alert('Erro: '+error.message); return; }
+  listarParaLancar();
+  montarHoje();
 }
 
 // ---------- MODAL ----------
@@ -3656,24 +3768,6 @@ async function consCalendario(){
   $('fc-print').classList.remove('hide');
   $('fc-empty').classList.add('hide'); $('fc-res').classList.remove('hide');
 }
-function abrirSeletorCancelamento(btn){
-  const td=btn.closest('td');
-  const opts=['<option value="">— marcar motivo —</option>'].concat(MOTIVOS_CANCELAMENTO.map(m=>`<option value="${esc(m)}">${esc(m)}</option>`)).concat(['<option value="__outro__">Outro motivo…</option>']).join('');
-  td.innerHTML=`<select class="cal-cancel-sel">${opts}</select>`;
-  const sel=td.querySelector('select');
-  sel.onchange=async()=>{
-    let motivo=sel.value;
-    if(!motivo){ consCalendario(); return; }
-    if(motivo==='__outro__'){ motivo=(prompt('Descreva o motivo:')||'').trim(); if(!motivo){ consCalendario(); return; } }
-    await sb.from('dias_cancelados').upsert({ano:calData.ano,turma:btn.dataset.turma,data:btn.dataset.data,motivo},{onConflict:'ano,turma,data'});
-    consCalendario();
-  };
-  sel.focus();
-}
-async function restaurarDia(turma,data){
-  await sb.from('dias_cancelados').delete().eq('ano',calData.ano).eq('turma',turma).eq('data',data);
-  consCalendario();
-}
 function imprimirCalendario(){
   if(!calData) return;
   abrirImpressao('Calendário de correções', `${TURMA_NOME[calData.turma]||calData.turma} · ${calData.ano}`, calCorpo(calData.reds, calData.turma, calData.cancelMap));
@@ -3681,6 +3775,18 @@ function imprimirCalendario(){
 
 // ---------- TEMAS APLICADOS ----------
 let temasCSV=null; let temasOriginais={};
+async function buscarTemaPalavra(){
+  const termo=$('tm-busca').value.trim();
+  const el=$('tm-busca-res');
+  if(!termo){ el.innerHTML='<p class="hint" style="margin:0">Digite uma palavra para buscar.</p>'; return; }
+  el.innerHTML='<p class="hint" style="margin:0">Buscando…</p>';
+  const {data,error}=await sb.from('redacoes').select('turma,ano,etapa,rotulo,tema,data').ilike('tema','%'+termo+'%').order('data',{ascending:false});
+  if(error){ el.innerHTML='<p class="hint" style="margin:0">Erro: '+esc(error.message)+'</p>'; return; }
+  if(!data||!data.length){ el.innerHTML='<p class="hint" style="margin:0">Nenhum tema encontrado com essa palavra.</p>'; return; }
+  el.innerHTML='<table class="tbl"><thead><tr><th>Ano</th><th>Turma</th><th>Etapa</th><th>Rótulo</th><th>Tema</th></tr></thead><tbody>'+
+    data.map(r=>`<tr><td>${r.ano}</td><td>${esc(TURMA_NOME[r.turma]||r.turma)}</td><td>${r.etapa?r.etapa+'ª':'—'}</td><td class="mono">${esc(r.rotulo)}</td><td>${esc(r.tema)}</td></tr>`).join('')+
+    '</tbody></table>';
+}
 function montarTmEtapa(){
   const turma=$('tm-turma').value;
   $('tm-etapa').innerHTML='<option value="">Todas as etapas</option>'+(turma?opcoesEtapa(turma):'');
@@ -3821,12 +3927,18 @@ document.querySelectorAll('#cons-grupos button').forEach(b=>b.onclick=()=>consGr
 $('fc-print').onclick=imprimirCalendario; $('fc-cancel-btn').onclick=marcarDiaCanceladoManual;
 $('ce-ano').onchange=consEixo; $('ce-turma').onchange=consEixo;
 $('tm-ano').onchange=consTemas; $('tm-turma').onchange=()=>{ montarTmEtapa(); consTemas(); }; $('tm-etapa').onchange=consTemas; $('tm-serie-check').onchange=consTemas; $('tm-csv').onclick=baixarTemasCSV; $('tm-salvar').onclick=salvarTemasMassa;
+$('tm-busca-btn').onclick=buscarTemaPalavra; $('tm-busca').onkeydown=(e)=>{ if(e.key==='Enter') buscarTemaPalavra(); };
 $('fe-turma').onchange=atualizarEtapasFE; $('fe-gerar').onclick=consFreqEtapa; $('fe-print').onclick=imprimirFreqEtapa;
 $('cc-ano').onchange=consCompetencias; $('cc-turma').onchange=consCompetencias;
 $('pd-ano').onchange=consPendencias; $('pd-turma').onchange=consPendencias; $('pd-grupo').onchange=consPendencias;
 $('fq-ano').onchange=carregarFreqRedacoes; $('fq-turma').onchange=carregarFreqRedacoes; $('fq-red').onchange=consFrequencia; $('fq-grupo').onchange=consFrequencia; $('fq-print').onclick=imprimirFrequencia;
 $('h-print').onclick=imprimirFolhaNotas; $('h-cartoes').onclick=imprimirCartoes;
 $('lt-manual').onclick=()=>lancTab('manual'); $('lt-import').onclick=()=>lancTab('import');
+$('hoje-cal-btn').onclick=toggleMiniCal; $('mc-prev').onclick=()=>{ miniCalMes--; if(miniCalMes<0){miniCalMes=11;miniCalAno--;} renderMiniCal(); }; $('mc-next').onclick=()=>{ miniCalMes++; if(miniCalMes>11){miniCalMes=0;miniCalAno++;} renderMiniCal(); };
+document.addEventListener('click',(e)=>{
+  const cal=$('mini-cal'); if(!cal||cal.classList.contains('hide')) return;
+  if(!cal.contains(e.target) && e.target!==$('hoje-cal-btn')) cal.classList.add('hide');
+});
 $('im-ano').onchange=carregarImportRedacoes; $('im-turma').onchange=carregarImportRedacoes; $('im-file').onchange=importArquivo; $('im-prever').onclick=preverImport; $('im-conf').onclick=confirmarImport;
 $('k-pdf').onclick=gerarBoletimAluno;
 $('bk-json').onclick=baixarBackup; $('bk-csv').onclick=baixarLancCSV;
@@ -3855,6 +3967,7 @@ $('rm-serie').onchange=()=>{ montarRmEtapa(); montarRmTurmasHint(); rmHeader(); 
 $('pl-turma').onchange=()=>{ montarPlanEtapa(); carregarPlanejamento(); }; $('pl-ano').onchange=carregarPlanejamento; $('pl-etapa').onchange=carregarPlanejamento; $('pl-salvar').onclick=salvarPlanejamento; $('pl-duplicar').onclick=duplicarPlanejamento;
 $('rl-ano').onchange=listarRedacoes; $('rl-turma').onchange=()=>{ montarRlEtapa(); listarRedacoes(); }; $('rl-etapa').onchange=listarRedacoes; $('rl-serie').onchange=listarRedacoes;
 $('x-ano').onchange=carregarRedacoesSelect; $('x-turma').onchange=()=>{ atualizarEtapasLancar(); carregarRedacoesSelect(); }; $('x-etapa').onchange=carregarRedacoesSelect; $('x-red').onchange=abrirRedacao; $('x-grupo').onchange=listarParaLancar;
+$('x-marcar-faltas').onclick=marcarPendentesFalta;
 document.querySelectorAll('#md-freq button').forEach(b=>b.onclick=()=>{setFreq(b.dataset.f);aplicarRegras();recalcular();agendarAutosave();});
 $('md-zero').onchange=()=>{aplicarRegras();recalcular();agendarAutosave();};
 $('md-motivo').onchange=agendarAutosave;
