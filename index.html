@@ -3017,13 +3017,19 @@ async function imprimirRoster(comDias){
     corpo+=`<div class="sec"><h3>${esc(TURMA_NOME[turma]||turma)} · Grupo ${g}</h3>`;
     const dd = comDias ? (dias[g]||[]) : [];
     if(comDias && dd.length){
-      corpo+='<table class="folha folha-h folha-nomes"><thead><tr><th>Aluno</th><th>Horário</th>'+dd.map(d=>{
-        const motivo=cancelMap[d];
-        if(motivo==='Ajuste de notas') return `<th>${dataCurta(d)}<br><small>(Ajuste)</small></th>`;
-        if(motivo) return `<th style="text-decoration:line-through">${dataCurta(d)}<br><small>(${esc(motivo)})</small></th>`;
-        return `<th>${dataCurta(d)}</th>`;
-      }).join('')+'</tr></thead><tbody>';
-      al.forEach(a=>{ corpo+=`<tr><td>${nomeAluno(a.matricula)}</td><td>${(a.horario||'').slice(0,5)}</td>${dd.map(()=>'<td></td>').join('')}</tr>`; });
+      corpo+='<table class="folha folha-h folha-nomes"><thead><tr><th>Aluno</th><th>Horário</th></tr></thead><tbody>';
+      al.forEach((a,i)=>{
+        corpo+=`<tr><td>${nomeAluno(a.matricula)}</td><td>${(a.horario||'').slice(0,5)}</td>`;
+        if(i===0){
+          dd.forEach(d=>{
+            const motivo=cancelMap[d];
+            if(motivo==='Ajuste de notas') corpo+=`<td class="data-col" rowspan="${al.length}">${dataCurta(d)}<br><small>(Ajuste de notas)</small></td>`;
+            else if(motivo) corpo+=`<td class="data-col data-col-cancel" rowspan="${al.length}">${dataCurta(d)}<br><small>(${esc(motivo)})</small></td>`;
+            else corpo+=`<td class="data-col" rowspan="${al.length}">${dataCurta(d)}</td>`;
+          });
+        }
+        corpo+='</tr>';
+      });
       corpo+='</tbody></table>';
     } else {
       if(comDias) corpo+='<p class="sub-note">Sem datas cadastradas para este grupo neste filtro.</p>';
@@ -3036,6 +3042,7 @@ async function imprimirRoster(comDias){
   const et = etapa ? ` · ${etapa}ª etapa` : '';
   const cfg = labDaTurma(ano,turma);
   const diaSemanaTxt = (comDias && cfg && cfg.dia!=null) ? ` · às ${DIAS_SEMANA[cfg.dia].toLowerCase()}s` : '';
+  if(comDias) corpo = '<style>@page{size:landscape}</style>' + corpo;
   abrirImpressao(comDias?'Matrículas, horários e dias':'Matrículas e horários', `${TURMA_NOME[turma]||turma} · ${ano}${comDias?et:''}${diaSemanaTxt}`, corpo);
 }
 
@@ -3514,6 +3521,10 @@ const CSS_IMPRESSAO = `
   table.folha-h{table-layout:fixed}
   table.folha-h th:first-child, table.folha-h td:first-child{width:170px;overflow:hidden;text-overflow:ellipsis}
   table.folha-h.folha-nomes th:first-child, table.folha-h.folha-nomes td:first-child{width:320px}
+  table.folha-nomes td.data-col{text-align:center;vertical-align:middle;font-size:22px;font-weight:700;color:var(--ink)}
+  table.folha-nomes td.data-col small{display:block;font-size:11px;font-weight:normal;color:var(--warn);margin-top:6px}
+  table.folha-nomes td.data-col-cancel{text-decoration:line-through;color:var(--muted)}
+  table.folha-nomes td.data-col-cancel small{text-decoration:none}
   table.folha-h th:nth-child(2), table.folha-h td:nth-child(2){width:70px}
   .pill{display:inline-block;padding:2px 8px;border-radius:12px;font-weight:700;font-size:12px}
   .pill.f-ok{background:var(--ok-soft);color:var(--brand2-ink)} .pill.f-md{background:var(--warn-soft);color:var(--warn)}
