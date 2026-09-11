@@ -2081,7 +2081,7 @@ async function abrirModal(a){
   const {data}=await sb.from('lancamentos').select('*').eq('redacao_id',redAtual.id).eq('matricula',a.matricula).maybeSingle();
   lancAtual=data;
   // frequência
-  setFreq(data?data.frequencia:'presente');
+  setFreq(data?data.frequencia:null);
   // zero
   $('md-zero').checked=data?data.zero_direto:false;
   $('md-motivo').innerHTML='<option value="">Escolha o motivo…</option>'+MOTIVOS_ZERO.map(m=>`<option value="${m}">${m}</option>`).join('');
@@ -2104,7 +2104,7 @@ function setFreq(f){
     b.classList.toggle('f',on&&f==='falta'); b.classList.toggle('j',on&&f==='falta_justificada');
   });
 }
-function freqAtual(){ const b=document.querySelector('#md-freq button.on'); return b?b.dataset.f:'presente'; }
+function freqAtual(){ const b=document.querySelector('#md-freq button.on'); return b?b.dataset.f:null; }
 
 const CRITERIOS_ESTRUTURA = [
   {c:'1.1', p:0.5, b:1, tipo:'bin', d:'Apresentar repertório de introdução diretamente ligado aos termos-chave da frase temática'},
@@ -2197,8 +2197,12 @@ function ligarEventosEstrutura(box){
     sincronizarTotalParte(cod); recalcular(); agendarAutosave();
   });
 }
+let criteriosTocados=false;
 function montarCriterios(data){
   const box=$('md-criterios'); const b=redAtual.banca;
+  if(b==='UECE') criteriosTocados = !!(data && (data.uece_t!=null||data.uece_ng!=null||data.uece_ce!=null||data.uece_lne!=null));
+  else if(b!=='ENEM' && b!=='Estrutura') criteriosTocados = !!(data && data.unifor_erros!=null);
+  else criteriosTocados = true; // ENEM e Estrutura já usam botões (sem ambiguidade de "0 esquecido")
   if(b==='ENEM'){
     box.innerHTML=`${[1,2,3,4,5].map(i=>`
       <div class="crit-comp"><label>C${i}</label>
@@ -2223,7 +2227,7 @@ function montarCriterios(data){
     box.innerHTML=`<div><label for="un-e">Quantidade de erros (cada par −10 de 200)</label>
       <input id="un-e" class="crit" type="number" min="0" value="${data&&data.unifor_erros!=null?data.unifor_erros:0}"></div>`;
   }
-  box.querySelectorAll('.crit').forEach(el=>el.addEventListener('input',()=>{recalcular();agendarAutosave();}));
+  box.querySelectorAll('.crit').forEach(el=>el.addEventListener('input',()=>{criteriosTocados=true; recalcular();agendarAutosave();}));
 }
 function montarAvaliacao(data){
   const box=$('md-aval');
@@ -2256,9 +2260,9 @@ function aplicarRegras(){
     const pres=freqAtual()==='presente';
     $('md-aval-block').style.opacity=pres?'1':'.5';
     $('md-aval').style.pointerEvents=pres?'auto':'none';
-    $('md-aviso').textContent=pres
-      ? 'Atividade: registre a frequência e a avaliação. Não entra no boletim.'
-      : 'Atividade com falta: registre apenas a frequência.';
+    $('md-aviso').textContent = !freqAtual()
+      ? 'Escolha a frequência do aluno para continuar.'
+      : (pres ? 'Atividade: registre a frequência e a avaliação. Não entra no boletim.' : 'Atividade com falta: registre apenas a frequência.');
     return;
   }
   const ativa=notaAtiva();
@@ -2267,9 +2271,11 @@ function aplicarRegras(){
   $('md-criterios').style.opacity=$('md-zero').checked?'.4':'1';
   $('md-zero-motivo').classList.toggle('hide',!$('md-zero').checked);
   const f=freqAtual();
-  $('md-aviso').textContent = (!ativa)
-    ? 'Redação comum com falta: não recebe nota e não entra na média. Se o aluno repuser, mude para Presente e lance a nota.'
-    : (redAtual.tipo==='prova'&&f!=='presente' ? 'Prova: a nota é lançada mesmo com falta, e a falta segue registrada.' : '');
+  $('md-aviso').textContent = !f
+    ? 'Escolha Presente, Falta ou Falta justificada para continuar.'
+    : (!ativa
+      ? 'Redação comum com falta: não recebe nota e não entra na média. Se o aluno repuser, mude para Presente e lance a nota.'
+      : (redAtual.tipo==='prova'&&f!=='presente' ? 'Prova: a nota é lançada mesmo com falta, e a falta segue registrada.' : ''));
 }
 function recalcular(){
   if(redAtual&&redAtual.banca==='Atividade') return null;
@@ -2285,9 +2291,11 @@ function recalcular(){
   return nota;
 }
 function coletarPayloadLancamento(){
-  if($('md-zero').checked && !$('md-motivo').value) return {invalido:true};
+  if(!freqAtual()) return {invalido:'freq'};
+  if($('md-zero').checked && !$('md-motivo').value) return {invalido:'zero'};
   const ehAtiv=redAtual.banca==='Atividade';
   const ativa=notaAtiva(); const zero=$('md-zero').checked; const v=ehAtiv?null:lerCriterios();
+  if(!ehAtiv && ativa && !zero && (redAtual.banca==='UECE'||redAtual.banca==='UNIFOR') && !criteriosTocados) return {invalido:'criterios'};
   const nota=recalcular();
   const payload={
     redacao_id:redAtual.id, matricula:alunoAtual, frequencia:freqAtual(),
@@ -2315,7 +2323,9 @@ function coletarPayloadLancamento(){
 async function salvarLancamento(){
   const msg=$('md-msg'); msg.textContent='';
   const {invalido, payload}=coletarPayloadLancamento();
-  if(invalido){ msg.textContent='Escolha o motivo do zero.'; return; }
+  if(invalido==='freq'){ msg.textContent='Escolha Presente, Falta ou Falta justificada antes de salvar.'; return; }
+  if(invalido==='zero'){ msg.textContent='Escolha o motivo do zero.'; return; }
+  if(invalido==='criterios'){ msg.textContent='Preencha ao menos um dos campos de erro (mesmo que seja 0) para confirmar a correção.'; return; }
   $('md-salvar').disabled=true;
   const {error}=await sb.from('lancamentos').upsert(payload,{onConflict:'redacao_id,matricula'});
   $('md-salvar').disabled=false;
@@ -2332,6 +2342,8 @@ function agendarAutosave(){
 }
 async function fazerAutosave(){
   const {invalido, payload}=coletarPayloadLancamento();
+  if(invalido==='freq'){ setSaveStatus('Escolha a frequência para salvar','muted'); return; }
+  if(invalido==='criterios'){ setSaveStatus('Preencha os critérios para salvar','muted'); return; }
   if(invalido){ setSaveStatus('','muted'); return; }
   const {error}=await sb.from('lancamentos').upsert(payload,{onConflict:'redacao_id,matricula'});
   if(error){ setSaveStatus('Não foi possível salvar automaticamente','err'); return; }
