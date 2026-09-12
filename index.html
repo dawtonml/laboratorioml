@@ -2285,7 +2285,9 @@ function aplicarRegras(){
 function recalcular(){
   if(redAtual&&redAtual.banca==='Atividade') return null;
   let nota=null;
-  if($('md-zero').checked) nota=0;
+  const pendenteMotivo = $('md-zero').checked && MOTIVOS_ZERO_SEM_MEDIA.includes($('md-motivo').value);
+  if(pendenteMotivo) nota=null;
+  else if($('md-zero').checked) nota=0;
   else if(notaAtiva()) nota=calcNota(redAtual.banca,lerCriterios());
   $('md-nota').textContent = nota==null?'—':nota.toFixed(1).replace('.',',');
   if(redAtual&&redAtual.banca==='Estrutura'&&!$('md-zero').checked&&notaAtiva()){
@@ -2304,7 +2306,7 @@ function coletarPayloadLancamento(){
   const nota=recalcular();
   const payload={
     redacao_id:redAtual.id, matricula:alunoAtual, frequencia:freqAtual(),
-    data_correcao: ativa?$('md-data').value:null,
+    data_correcao: (ativa&&nota!=null)?$('md-data').value:null,
     zero_direto:zero, motivo_zero:zero?$('md-motivo').value:null,
     enem_c1:null,enem_c2:null,enem_c3:null,enem_c4:null,enem_c5:null,
     uece_t:null,uece_ng:null,uece_ce:null,uece_lne:null,unifor_erros:null,
@@ -2598,7 +2600,7 @@ const dataBR = d => d ? d.split('-').reverse().join('/') : '';
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function normNome(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim(); }
 function faixa(n){ return n==null?'f-na':(n>=7?'f-ok':(n>=5?'f-md':'f-lo')); }
-function notaEfetiva(red,l){ if(!l||l.nota_final==null) return null; if(l.zero_direto && MOTIVOS_ZERO_SEM_MEDIA.includes(l.motivo_zero)) return null; let n=+l.nota_final; if(red&&red.tipo==='comum'&&!l.zero_direto&&red.penalidade){ n=Math.max(0,+(n-(+red.penalidade)).toFixed(2)); } return n; }
+function notaEfetiva(red,l){ if(!l||l.nota_final==null) return null; let n=+l.nota_final; if(red&&red.tipo==='comum'&&!l.zero_direto&&red.penalidade){ n=Math.max(0,+(n-(+red.penalidade)).toFixed(2)); } return n; }
 function notaCor(n){ return n>=7?'var(--brand2)':(n>=5?'var(--warn)':'var(--danger)'); }
 function pill(n){ return `<span class="pill ${faixa(n)}">${fmtN(n)}</span>`; }
 function freqLabel(l){
@@ -2608,7 +2610,9 @@ function freqLabel(l){
   return 'Presente';
 }
 function detalheLanc(banca,l){
-  if(!l||l.nota_final==null) return '';
+  if(!l) return '';
+  if(l.motivo_zero && MOTIVOS_ZERO_SEM_MEDIA.includes(l.motivo_zero)) return l.motivo_zero;
+  if(l.nota_final==null) return '';
   if(l.zero_direto) return 'Zero direto'+(l.motivo_zero?': '+l.motivo_zero:'');
   if(banca==='ENEM'){ if(l.enem_c1==null) return ''; return [1,2,3,4,5].map(i=>'C'+i+' '+l['enem_c'+i]).join(' · '); }
   if(banca==='UECE') return `T ${l.uece_t||0} · NG ${l.uece_ng||0} · CE ${l.uece_ce||0} · LNE ${l.uece_lne||0}`;
@@ -3998,7 +4002,7 @@ $('x-ano').onchange=carregarRedacoesSelect; $('x-turma').onchange=()=>{ atualiza
 $('x-marcar-faltas').onclick=marcarPendentesFalta;
 document.querySelectorAll('#md-freq button').forEach(b=>b.onclick=()=>{setFreq(b.dataset.f);aplicarRegras();recalcular();agendarAutosave();});
 $('md-zero').onchange=()=>{aplicarRegras();recalcular();agendarAutosave();};
-$('md-motivo').onchange=agendarAutosave;
+$('md-motivo').onchange=()=>{ recalcular(); agendarAutosave(); };
 $('md-data').onchange=agendarAutosave;
 $('md-cancel').onclick=()=>{ clearTimeout(autosaveTimer); $('overlay').classList.add('hide'); listarParaLancar(); if(!$('lp-manual').classList.contains('hide')) montarHoje(); };
 $('md-salvar').onclick=salvarLancamento;
