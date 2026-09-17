@@ -1356,13 +1356,16 @@ async function carregarRefs(){
   const optT=turmasVisiveis().map(x=>`<option value="${x.codigo}">${x.nome}</option>`).join('');
   const optA=ANOS.map(x=>`<option value="${x}">${x}</option>`).join('');
   const optTTodas=TURMAS.map(x=>`<option value="${x.codigo}">${x.nome}</option>`).join('');
-  ['c-turma','x-turma','k-turma','q-turma','b-turma','ea-turma','h-turma','pr-turma','pr-dturma','ex-turma','hh-turma','cc-turma','pd-turma','vc-turma','fq-turma','im-turma','fe-turma','ce-turma','dt-turma'].forEach(id=>$(id).innerHTML=optT);
-  $('tm-turma').innerHTML='<option value="">Selecione a turma…</option>'+optT;
+  const optTBlank='<option value="">Selecione a turma…</option>'+optT;
+  ['ea-turma','vc-turma'].forEach(id=>$(id).innerHTML=optT);
+  ['c-turma','x-turma','k-turma','q-turma','b-turma','h-turma','pr-turma','pr-dturma','ex-turma','hh-turma','cc-turma','pd-turma','fq-turma','im-turma','fe-turma','ce-turma','dt-turma'].forEach(id=>$(id).innerHTML=optTBlank);
+  $('lb-turma').innerHTML=optT;
+  $('tm-turma').innerHTML=optTBlank;
   ['c-ano','l-ano','r-ano','rl-ano','x-ano','k-ano','q-ano','b-ano','h-ano','pr-ano','pr-dano','ex-ano','hh-ano','cc-ano','pd-ano','fq-ano','im-ano','fe-ano','lb-ano','rm-ano','ce-ano','tm-ano','ed-ano','pl-ano','dt-ano'].forEach(id=>$(id).innerHTML=optA);
-  $('l-turma').innerHTML='<option value="">Selecione a turma…</option>'+optT;
+  $('l-turma').innerHTML=optTBlank;
   // Criar/editar/consultar redações: todas as turmas, mesmo fora do escopo de correção
   // (criar e agendar redações é atividade de professor, não só de corretor; a criação em massa já era assim)
-  $('r-turma').innerHTML=optTTodas;
+  $('r-turma').innerHTML='<option value="">Selecione a turma…</option>'+optTTodas;
   $('rl-turma').innerHTML='<option value="">Selecione a turma…</option>'+optTTodas;
   LAB={}; ((labRes&&labRes.data)||[]).forEach(x=>LAB[x.ano+'|'+x.turma]={dia:x.dia});
   NOMES={}; ((nomesRes&&nomesRes.data)||[]).forEach(x=>{ if(x.nome) NOMES[x.matricula]=x.nome; });
@@ -1486,6 +1489,7 @@ function atualizarRotulos(){
   const turma=$('r-turma').value;
   $('r-rotulo').innerHTML=rotulosDaTurma(turma).map(r=>`<option value="${r}">${r}</option>`).join('');
   $('r-etapa').innerHTML=opcoesEtapa(turma);
+  if(turma){ const ea=etapaAtual(+$('r-ano').value, turma); if(ea) $('r-etapa').value=String(ea); }
   sugerirBanca();
 }
 function bancaTipoDeRotulo(r){
@@ -1555,7 +1559,11 @@ function redTab(w){
 }
 function turmasDaSerie(serie){ return TURMAS.filter(t=>serieDe(t.codigo)===serie).map(t=>t.codigo); }
 function serieRepresentativa(){ return turmasDaSerie($('rm-serie').value)[0]||$('rm-serie').value; }
-function montarRmEtapa(){ $('rm-etapa').innerHTML=opcoesEtapa(serieRepresentativa()); }
+function montarRmEtapa(){
+  const turmaRep=serieRepresentativa();
+  $('rm-etapa').innerHTML=opcoesEtapa(turmaRep);
+  const ea=etapaAtual(+$('rm-ano').value, turmaRep); if(ea) $('rm-etapa').value=String(ea);
+}
 function montarRmTurmasHint(){ const ts=turmasDaSerie($('rm-serie').value); $('rm-turmas').textContent = ts.length?('Serão criadas para: '+ts.map(c=>TURMA_NOME[c]||c).join(', ')):'Nenhuma turma nesta série.'; }
 function rmHeader(){ $('rm-linhas').innerHTML=''; }
 function rmToggleExterna(bloco){
@@ -1923,6 +1931,7 @@ function duplicarPlanejamento(){
 function montarRlEtapa(){
   const turma=$('rl-turma').value;
   $('rl-etapa').innerHTML='<option value="">Todas as etapas</option>'+(turma?opcoesEtapa(turma):'');
+  if(turma){ const ea=etapaAtual(+$('rl-ano').value, turma); if(ea) $('rl-etapa').value=String(ea); }
 }
 async function listarRedacoes(){
   const ano=+$('rl-ano').value, turma=$('rl-turma').value, etapa=$('rl-etapa').value, verSerie=$('rl-serie').checked;
@@ -1955,6 +1964,7 @@ function atualizarEtapasLancar(){
   const turma=$('x-turma').value, atual=$('x-etapa').value;
   $('x-etapa').innerHTML='<option value="">Todas as etapas</option>'+opcoesEtapa(turma);
   if(atual && +atual<=nEtapas(turma)) $('x-etapa').value=atual;
+  else if(turma){ const ea=etapaAtual(+$('x-ano').value, turma); if(ea) $('x-etapa').value=String(ea); }
 }
 let diaPainelHoje=null; // null = hoje; senão, string ISO do dia escolhido no minicalendário
 async function montarHoje(){
@@ -1972,7 +1982,22 @@ async function montarHoje(){
   if(minhasTurmas&&minhasTurmas.length) q=q.in('turma',minhasTurmas);
   const {data}=await q;
   const reds=data||[];
-  if(!reds.length){ $('hoje-count').textContent= ehHoje?'sem correções hoje':'sem correções neste dia'; lista.innerHTML=`<div class="hint" style="margin:0">Nenhuma redação programada para correção ${ehHoje?'hoje':'neste dia'}.</div>`; return; }
+  if(!reds.length){
+    let qc=sb.from('dias_cancelados').select('turma,motivo').eq('data',alvo);
+    if(minhasTurmas&&minhasTurmas.length) qc=qc.in('turma',minhasTurmas);
+    const {data:cancelados}=await qc;
+    if(cancelados&&cancelados.length){
+      $('hoje-count').textContent = ehHoje?'sem correções hoje':'sem correções neste dia';
+      lista.innerHTML = cancelados.map(c=>{
+        const motivoTxt = c.motivo==='Ajuste de notas' ? 'dia de ajuste de notas' : 'sem atendimento: '+esc(c.motivo);
+        return `<div class="hint" style="margin:0 0 4px">${esc(TURMA_NOME[c.turma]||c.turma)}: ${ehHoje?'hoje':'esse dia'} é ${motivoTxt}.</div>`;
+      }).join('');
+    } else {
+      $('hoje-count').textContent= ehHoje?'sem correções hoje':'sem correções neste dia';
+      lista.innerHTML=`<div class="hint" style="margin:0">Nenhuma redação programada para correção ${ehHoje?'hoje':'neste dia'}.</div>`;
+    }
+    return;
+  }
   $('hoje-count').textContent=`${reds.length} ${reds.length===1?'redação':'redações'}${ehHoje?' para hoje':''}`;
   reds.sort((a,b)=> (a.turma<b.turma?-1:a.turma>b.turma?1:0));
   const ids=reds.map(r=>r.id);
@@ -3084,7 +3109,11 @@ async function consRedacao(){
 
 // ---------- VISÃO 3: FECHAMENTO POR ETAPA (BOLETIM) ----------
 let boletimCSV=null;
-function consEtapaOpts(){ $('b-etapa').innerHTML=opcoesEtapa($('b-turma').value); }
+function consEtapaOpts(){
+  const turma=$('b-turma').value;
+  $('b-etapa').innerHTML=opcoesEtapa(turma);
+  if(turma){ const ea=etapaAtual(+$('b-ano').value, turma); if(ea) $('b-etapa').value=String(ea); }
+}
 async function consBoletim(){
   const ano=+$('b-ano').value, turma=$('b-turma').value, etapa=+$('b-etapa').value;
   const msg=$('b-msg'); msg.className='msg'; msg.textContent='';
@@ -3192,7 +3221,11 @@ function irmasDaSerie(t){ const s=serieDe(t); return TURMAS.filter(x=>serieDe(x.
 function ordemRotulo(t){ const arr=rotulosDaTurma(t); const m={}; arr.forEach((r,i)=>m[r]=i); return m; }
 
 // ---------- VISÃO 4: QUADRO DE HORÁRIOS ----------
-function montarHEtapa(){ $('h-etapa').innerHTML='<option value="">Todas as etapas</option>'+opcoesEtapa($('h-turma').value); }
+function montarHEtapa(){
+  const turma=$('h-turma').value;
+  $('h-etapa').innerHTML='<option value="">Todas as etapas</option>'+opcoesEtapa(turma);
+  if(turma){ const ea=etapaAtual(+$('h-ano').value, turma); if(ea) $('h-etapa').value=String(ea); }
+}
 async function diasPorGrupo(ano,turma,etapa){
   let q=sb.from('redacoes').select('data,data_g1,data_g2,etapa').eq('ano',ano).eq('turma',turma);
   if(etapa) q=q.eq('etapa',+etapa);
@@ -3349,6 +3382,7 @@ let hhAlunos=[], hhFaixas=[];
 async function montarHorariosLista(){
   const msg=$('hh-msg'); msg.className='msg'; msg.textContent='';
   const ano=+$('hh-ano').value, turma=$('hh-turma').value, grupo=+$('hh-grupo').value;
+  if(!turma){ msg.className='msg err'; msg.textContent='Selecione a turma.'; return; }
   hhFaixas=gerarFaixasHorario();
   if(!hhFaixas.length){ msg.className='msg err'; msg.textContent='Confira início, fim e o tempo por atendimento.'; return; }
   const {data}=await sb.from('matriculas_ano').select('id,matricula,horario').eq('ano',ano).eq('turma',turma).eq('grupo',grupo).eq('ativo',true).order('horario').order('matricula');
@@ -3648,6 +3682,7 @@ async function consPendencias(){
   if(!pdCache.reds.length){ $('pd-res').classList.add('hide'); $('pd-empty').classList.remove('hide'); return; }
   renderResumoCorretor();
   $('pd-resumo-panel').classList.toggle('hide', !ehCoord());
+  if(!turma){ $('pd-res').classList.add('hide'); $('pd-empty').textContent='Selecione uma turma.'; $('pd-empty').classList.remove('hide'); return; }
   const redsTurma=pdCache.reds.filter(r=>r.turma===turma).sort((a,b)=> a.data<b.data?-1 : a.data>b.data?1 : a.id-b.id);
   const corrTurma=pdCache.vinculos.filter(v=>v.turma===turma).map(v=> v.login+(v.grupo?(' G'+v.grupo):''));
   $('pd-titulo').textContent=`${TURMA_NOME[turma]||turma} · ${ano}`;
@@ -3967,7 +4002,11 @@ async function imprimirFolhaNotas(){
 }
 
 // ---------- FREQUÊNCIA DA ETAPA ----------
-function atualizarEtapasFE(){ $('fe-etapa').innerHTML=opcoesEtapa($('fe-turma').value); }
+function atualizarEtapasFE(){
+  const turma=$('fe-turma').value;
+  $('fe-etapa').innerHTML=opcoesEtapa(turma);
+  if(turma){ const ea=etapaAtual(+$('fe-ano').value, turma); if(ea) $('fe-etapa').value=String(ea); }
+}
 function freqCod(f){ return f==='presente'?'P':f==='falta'?'F':f==='falta_justificada'?'FJ':''; }
 function freqCls(f){ return f==='presente'?'fc-p':f==='falta'?'fc-f':f==='falta_justificada'?'fc-fj':''; }
 let feData=null;
@@ -4135,6 +4174,7 @@ async function buscarTemaPalavra(){
 function montarTmEtapa(){
   const turma=$('tm-turma').value;
   $('tm-etapa').innerHTML='<option value="">Todas as etapas</option>'+(turma?opcoesEtapa(turma):'');
+  if(turma){ const ea=etapaAtual(+$('tm-ano').value, turma); if(ea) $('tm-etapa').value=String(ea); }
 }
 async function consTemas(){
   const ano=+$('tm-ano').value, turma=$('tm-turma').value, etapa=$('tm-etapa').value, verSerie=$('tm-serie-check').checked;
