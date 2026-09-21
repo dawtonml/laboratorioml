@@ -250,6 +250,7 @@
   .fc-p{color:var(--brand2-ink);font-weight:600}
   .fc-f{color:var(--danger);font-weight:700}
   .fc-fj{color:var(--warn);font-weight:600}
+  .fc-na{color:var(--line-strong)}
   #cons-subs button{font-size:13px}
   #cons-subs{margin-top:-6px}
   .prog{height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:7px;max-width:240px}
@@ -4013,19 +4014,41 @@ let feData=null;
 async function consFreqEtapa(){
   const ano=+$('fe-ano').value, turma=$('fe-turma').value, etapa=+$('fe-etapa').value;
   $('fe-msg').textContent='';
-  const {data:reds}=await sb.from('redacoes').select('id,rotulo,data').eq('ano',ano).eq('turma',turma).eq('etapa',etapa).order('data').order('id');
+  const {data:reds}=await sb.from('redacoes').select('id,rotulo,data,data_g1,data_g2,correcao_externa').eq('ano',ano).eq('turma',turma).eq('etapa',etapa).order('data').order('id');
   if(!reds||!reds.length){ $('fe-res').classList.add('hide'); $('fe-empty').classList.remove('hide'); $('fe-print').classList.add('hide'); return; }
   const {data:alunosRaw}=await sb.from('matriculas_ano').select('matricula,grupo,horario').eq('ano',ano).eq('turma',turma).eq('ativo',true);
   const alunos=ordenarAlfa(alunosRaw);
   const ids=reds.map(r=>r.id);
   const {data:lancs}=await sb.from('lancamentos').select('redacao_id,matricula,frequencia').in('redacao_id',ids);
   const cel={}; (lancs||[]).forEach(l=>cel[l.matricula+'|'+l.redacao_id]=l.frequencia);
-  let head='<thead><tr><th class="stick">Matrícula</th>'+reds.map(r=>`<th title="${esc(dataBR(r.data))}">${esc(r.rotulo)}</th>`).join('')+'<th class="med">Faltas</th></tr></thead>';
-  let totalFaltas=0, totalLanc=0, totalPres=0; const colFaltas=reds.map(()=>0);
+
+  // uma coluna por data de correção (não por rótulo); alunos fora do grupo daquela data recebem "—"
+  const colunas=[];
+  reds.forEach(r=>{
+    const g1=r.data_g1, g2=r.data_g2;
+    if(r.correcao_externa){
+      // correção externa não segue dia-de-grupo: uma coluna só, valendo para todo mundo
+      const dataUnica=g1||g2||r.data;
+      if(dataUnica) colunas.push({red:r, data:dataUnica, grupos:[1,2]});
+      return;
+    }
+    if(g1&&g2&&g1===g2) colunas.push({red:r, data:g1, grupos:[1,2]});
+    else {
+      if(g1) colunas.push({red:r, data:g1, grupos:[1]});
+      if(g2) colunas.push({red:r, data:g2, grupos:[2]});
+      if(!g1&&!g2&&r.data) colunas.push({red:r, data:r.data, grupos:[1,2]});
+    }
+  });
+  colunas.sort((a,b)=> a.data<b.data?-1:(a.data>b.data?1:(a.red.id-b.red.id)));
+
+  let head='<thead><tr><th class="stick">Matrícula</th>'+colunas.map(c=>`<th title="${esc(c.red.rotulo)} · Grupo ${c.grupos.join(' e ')}">${dataBR(c.data)}<br><small>${esc(c.red.rotulo)}</small></th>`).join('')+'<th class="med">Faltas</th></tr></thead>';
+  let totalFaltas=0, totalLanc=0, totalPres=0; const colFaltas=colunas.map(()=>0);
   let body='<tbody>';
   (alunos||[]).forEach(a=>{
     let faltas=0, tds='';
-    reds.forEach((r,j)=>{ const f=cel[a.matricula+'|'+r.id]||null;
+    colunas.forEach((c,j)=>{
+      if(!c.grupos.includes(a.grupo)){ tds+='<td class="fc-na">—</td>'; return; }
+      const f=cel[a.matricula+'|'+c.red.id]||null;
       tds+=`<td class="${freqCls(f)}">${freqCod(f)||'·'}</td>`;
       if(f){ totalLanc++; if(f==='presente')totalPres++; else { faltas++; colFaltas[j]++; totalFaltas++; } }
     });
@@ -4036,23 +4059,26 @@ async function consFreqEtapa(){
   $('fe-tbl').innerHTML=head+body+foot;
   const pct= totalLanc? Math.round(totalPres/totalLanc*100):0;
   $('fe-titulo').textContent=`${TURMA_NOME[turma]||turma} · ${etapa}ª etapa`;
-  $('fe-sub').textContent=`${ano} · ${reds.length} ${reds.length===1?'redação':'redações'} · ${(alunos||[]).length} alunos`;
+  $('fe-sub').textContent=`${ano} · ${colunas.length} ${colunas.length===1?'data':'datas'} de correção · ${(alunos||[]).length} alunos`;
   $('fe-metrics').innerHTML=metricsHTML([
-    {n:reds.length,l:'Redações'},
+    {n:colunas.length,l:'Datas de correção'},
     {n:(alunos||[]).length,l:'Alunos'},
     {n:totalFaltas,l:'Total de faltas',color: totalFaltas?'var(--danger)':'var(--brand2)'},
     {n:pct+'%',l:'Presença (dos lançados)'}
   ]);
-  feData={reds,alunos,cel,turma,ano,etapa};
+  feData={colunas,alunos,cel,turma,ano,etapa};
   $('fe-print').classList.remove('hide');
   $('fe-empty').classList.add('hide'); $('fe-res').classList.remove('hide');
 }
 function imprimirFreqEtapa(){
   if(!feData) return;
-  const {reds,alunos,cel,turma,ano,etapa}=feData;
-  let corpo='<table class="folha"><thead><tr><th>Matrícula</th>'+reds.map(r=>`<th>${esc(r.rotulo)}</th>`).join('')+'<th>Faltas</th></tr></thead><tbody>';
+  const {colunas,alunos,cel,turma,ano,etapa}=feData;
+  let corpo='<table class="folha"><thead><tr><th>Matrícula</th>'+colunas.map(c=>`<th>${dataBR(c.data)}<br><small>${esc(c.red.rotulo)}</small></th>`).join('')+'<th>Faltas</th></tr></thead><tbody>';
   alunos.forEach(a=>{ let faltas=0, tds='';
-    reds.forEach(r=>{ const f=cel[a.matricula+'|'+r.id]||null; tds+=`<td>${freqCod(f)||''}</td>`; if(f&&f!=='presente')faltas++; });
+    colunas.forEach(c=>{
+      if(!c.grupos.includes(a.grupo)){ tds+='<td>—</td>'; return; }
+      const f=cel[a.matricula+'|'+c.red.id]||null; tds+=`<td>${freqCod(f)||''}</td>`; if(f&&f!=='presente')faltas++;
+    });
     corpo+=`<tr><td class="mono">${matNome(a.matricula)}</td>${tds}<td>${faltas||''}</td></tr>`;
   });
   corpo+='</tbody></table>';
