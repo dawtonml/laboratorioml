@@ -160,7 +160,7 @@
     padding:7px 10px;border-radius:8px;opacity:0;transform:translate(-50%,-120%);transition:opacity .12s;white-space:nowrap;z-index:5}
   .chart-tip b{font-weight:600}
   .banca-row{display:flex;align-items:center;gap:12px;margin:9px 0}
-  .banca-row .tag{width:64px;flex:none;font-size:12.5px;font-weight:600}
+  .banca-row .tag{width:96px;flex:none;font-size:12.5px;font-weight:600}
   .banca-row .bbar{flex:1;height:9px;background:var(--line);border-radius:6px;overflow:hidden}
   .banca-row .bbar span{display:block;height:100%;border-radius:6px}
   .banca-row .num{font-family:ui-monospace,monospace;font-size:13.5px;width:40px;text-align:right}
@@ -499,7 +499,7 @@
           <div><label for="r-etapa">Etapa</label><select id="r-etapa"></select></div>
           <div><label for="r-rotulo">Redação</label><select id="r-rotulo"></select></div>
           <div><label for="r-banca">Banca</label>
-            <select id="r-banca"><option value="ENEM">ENEM</option><option value="UECE">UECE</option><option value="UNIFOR">UNIFOR</option><option value="Estrutura">Estrutura</option><option value="Atividade">Atividade</option></select></div>
+            <select id="r-banca"><option value="ENEM">ENEM</option><option value="UECE">UECE</option><option value="UNIFOR">UNIFOR</option><option value="Estrutura">Estrutura</option><option value="Grade Externa">Grade Externa</option><option value="Atividade">Atividade</option></select></div>
           <div><label for="r-tipo">Tipo</label>
             <select id="r-tipo"><option value="comum">Comum</option><option value="prova">Prova</option></select></div>
         </div>
@@ -612,7 +612,7 @@
     <section id="sec-lanc" class="hide">
       <div class="tabs">
         <button id="lt-manual" class="on">Lançar manualmente</button>
-        <button id="lt-import">Importar ENEM (planilha)</button>
+        <button id="lt-import">Importar notas</button>
       </div>
       <div id="lp-manual">
       <div class="panel" id="hoje-box" style="background:var(--accent-soft);border-color:var(--accent)">
@@ -666,13 +666,19 @@
       </div><!-- fim lp-manual -->
 
       <div id="lp-import" class="hide">
+        <div class="panel" id="im-pend-panel">
+          <h3>Correções externas sem nota</h3>
+          <p class="hint">Redações de correção externa com alunos ainda sem lançamento, em qualquer turma. Clique numa para já abrir a importação nela.</p>
+          <div id="im-pend-lista"></div>
+        </div>
         <div class="panel">
-          <h3>Importar notas ENEM de uma planilha</h3>
-          <p class="hint">Para quando a correção é feita numa plataforma externa. Envie a planilha (.xlsx, .xls ou .csv) ou cole os dados. Formato: uma linha por aluno, matrícula seguida de C1, C2, C3, C4, C5 (separados por tabulação, vírgula, ponto e vírgula ou espaço). Cada competência vai de 0 a 200.</p>
+          <h3>Importar notas de uma planilha</h3>
+          <p class="hint">Para quando a correção é feita fora do sistema. Envie a planilha (.xlsx, .xls ou .csv) ou cole os dados.</p>
+          <p class="hint" id="im-formato-hint">Escolha a redação abaixo para ver o formato esperado.</p>
           <div class="grid3">
             <div><label for="im-ano">Ano</label><select id="im-ano"></select></div>
             <div><label for="im-turma">Turma</label><select id="im-turma"></select></div>
-            <div><label for="im-red">Redação (ENEM)</label><select id="im-red"><option value="">Selecione…</option></select></div>
+            <div><label for="im-red">Redação (correção externa)</label><select id="im-red"><option value="">Selecione…</option></select></div>
           </div>
           <div class="block" style="margin-top:12px">
             <label for="im-file">Enviar planilha</label>
@@ -914,6 +920,7 @@
               <button class="on" data-b="ENEM">ENEM</button>
               <button data-b="UECE">UECE</button>
               <button data-b="UNIFOR">UNIFOR</button>
+              <button data-b="Grade Externa">Grade Externa</button>
             </div>
             <div class="tabs" id="dt-comp-tabs" style="margin-bottom:14px">
               <button class="on" data-c="geral">Geral</button>
@@ -1210,7 +1217,7 @@
     <div class="grid3">
       <div><label for="er-rotulo">Rótulo</label><select id="er-rotulo"></select></div>
       <div><label for="er-banca">Banca</label>
-        <select id="er-banca"><option value="ENEM">ENEM</option><option value="UECE">UECE</option><option value="UNIFOR">UNIFOR</option><option value="Estrutura">Estrutura</option><option value="Atividade">Atividade</option></select></div>
+        <select id="er-banca"><option value="ENEM">ENEM</option><option value="UECE">UECE</option><option value="UNIFOR">UNIFOR</option><option value="Estrutura">Estrutura</option><option value="Grade Externa">Grade Externa</option><option value="Atividade">Atividade</option></select></div>
       <div><label for="er-tipo">Tipo</label>
         <select id="er-tipo"><option value="comum">Comum</option><option value="prova">Prova</option></select></div>
     </div>
@@ -2317,8 +2324,8 @@ let criteriosTocados=false;
 function montarCriterios(data){
   const box=$('md-criterios'); const b=redAtual.banca;
   if(b==='UECE') criteriosTocados = !!(data && (data.uece_t!=null||data.uece_ng!=null||data.uece_ce!=null||data.uece_lne!=null));
-  else if(b!=='ENEM' && b!=='Estrutura') criteriosTocados = !!(data && data.unifor_erros!=null);
-  else criteriosTocados = true; // ENEM e Estrutura já usam botões (sem ambiguidade de "0 esquecido")
+  else if(b==='UNIFOR') criteriosTocados = !!(data && data.unifor_erros!=null);
+  else criteriosTocados = true; // ENEM, Estrutura e Grade Externa já não têm ambiguidade de "0 esquecido"
   if(b==='ENEM'){
     box.innerHTML=`${[1,2,3,4,5].map(i=>`
       <div class="crit-comp"><label>C${i}</label>
@@ -2339,6 +2346,10 @@ function montarCriterios(data){
   } else if(b==='Estrutura'){
     box.innerHTML=montarBlocoEstrutura(data);
     ligarEventosEstrutura(box);
+  } else if(b==='Grade Externa'){
+    box.innerHTML=`<div><label for="ge-nota">Nota final (0 a 10)</label>
+      <input id="ge-nota" class="crit" type="number" min="0" max="10" step="0.1" value="${data&&data.nota_final!=null?data.nota_final:''}" placeholder="Ex.: 7,5"></div>
+      <p class="sub-note" style="margin-top:6px">Grade Externa não tem critério próprio: a nota é digitada direto, como veio da correção feita fora do sistema.</p>`;
   } else {
     box.innerHTML=`<div><label for="un-e">Quantidade de erros (cada par −10 de 200)</label>
       <input id="un-e" class="crit" type="number" min="0" value="${data&&data.unifor_erros!=null?data.unifor_erros:0}"></div>`;
@@ -2362,12 +2373,14 @@ function lerCriterios(){
   if(b==='ENEM'){ const v={}; [1,2,3,4,5].forEach(i=>{const on=$('en-c'+i).querySelector('.crit-btn.on'); v['c'+i]= on? +on.dataset.v : null;}); return v; }
   if(b==='UECE') return {t:+$('ue-t').value||0,ng:+$('ue-ng').value||0,ce:+$('ue-ce').value||0,lne:+$('ue-lne').value||0};
   if(b==='Estrutura') return {criterios: coletarEstruturaDOM()};
+  if(b==='Grade Externa') return {notaDireta: $('ge-nota').value===''?null:+$('ge-nota').value};
   return {erros:+$('un-e').value||0};
 }
 function calcNota(b,v){
   if(b==='ENEM'){ if([1,2,3,4,5].some(i=>v['c'+i]==null)) return null; const s=[1,2,3,4,5].reduce((a,i)=>a+v['c'+i],0); return Math.min(10,+(s/100).toFixed(2)); }
   if(b==='UECE'){ const d=v.t*2.5+v.ng*1+v.ce*0.5+v.lne*2.5; return Math.min(10,+(Math.max(0,60-d)*0.167).toFixed(2)); }
   if(b==='Estrutura'){ const c=centavosEstrutura(v.criterios); const notaC=Math.min(1000,Math.round(c/50)*50); return notaC/100; }
+  if(b==='Grade Externa'){ return v.notaDireta==null?null:Math.min(10,Math.max(0,+v.notaDireta.toFixed(2))); }
   const pares=Math.floor(v.erros/2); return Math.min(10,+(Math.max(0,200-pares*10)/20).toFixed(2));
 }
 function notaAtiva(){ if($('md-zero').checked) return true; return redAtual.tipo==='prova'||freqAtual()==='presente'; }
@@ -2434,6 +2447,7 @@ function coletarPayloadLancamento(){
     if(redAtual.banca==='ENEM'){payload.enem_c1=v.c1;payload.enem_c2=v.c2;payload.enem_c3=v.c3;payload.enem_c4=v.c4;payload.enem_c5=v.c5;}
     else if(redAtual.banca==='UECE'){payload.uece_t=v.t;payload.uece_ng=v.ng;payload.uece_ce=v.ce;payload.uece_lne=v.lne;}
     else if(redAtual.banca==='Estrutura'){payload.estrutura=v.criterios;}
+    else if(redAtual.banca==='Grade Externa'){ /* nota digitada direto, sem critério pra guardar */ }
     else payload.unifor_erros=v.erros;
   }
   return {invalido:false, payload};
@@ -2475,13 +2489,59 @@ function lancTab(w){
   $('lt-import').classList.toggle('on', w==='import');
   $('lp-manual').classList.toggle('hide', w!=='manual');
   $('lp-import').classList.toggle('hide', w!=='import');
+  if(w==='import') carregarPendenciasExternas();
   if(w==='import') carregarImportRedacoes();
 }
 async function carregarImportRedacoes(){
   const ano=+$('im-ano').value, turma=$('im-turma').value;
-  const {data}=await sb.from('redacoes').select('id,rotulo,data').eq('ano',ano).eq('turma',turma).eq('banca','ENEM').order('data');
-  $('im-red').innerHTML='<option value="">Selecione…</option>'+(data||[]).map(r=>`<option value="${r.id}">${esc(r.rotulo)} · ${(r.data||'').split('-').reverse().join('/')}</option>`).join('');
+  const {data}=await sb.from('redacoes').select('id,rotulo,data,banca').eq('ano',ano).eq('turma',turma).in('banca',['ENEM','Grade Externa']).eq('correcao_externa',true).order('data');
+  $('im-red').innerHTML='<option value="">Selecione…</option>'+(data||[]).map(r=>`<option value="${r.id}" data-banca="${esc(r.banca)}">${esc(r.rotulo)} · ${(r.data||'').split('-').reverse().join('/')} · ${esc(r.banca)}</option>`).join('');
   $('im-prev').classList.add('hide'); $('im-msg').textContent='';
+  atualizarFormatoImport();
+}
+function atualizarFormatoImport(){
+  const opt=$('im-red').selectedOptions[0];
+  const banca=opt?opt.dataset.banca:null;
+  const hint=$('im-formato-hint'), txt=$('im-txt');
+  if(!banca){ hint.textContent='Escolha a redação acima para ver o formato esperado.'; return; }
+  if(banca==='ENEM'){
+    hint.textContent='Formato: uma linha por aluno, matrícula (ou nome) seguida de C1, C2, C3, C4, C5, de 0 a 200 cada (separados por tabulação, vírgula, ponto e vírgula ou espaço).';
+    txt.placeholder='20240137 160 120 80 120 100\n20240145 200 160 160 160 120\nMaria Eduarda Gonçalves 160 120 80 120 100';
+  } else {
+    hint.textContent='Formato: uma linha por aluno, matrícula (ou nome) seguida só da nota final, de 0 a 10 (separados por tabulação, vírgula, ponto e vírgula ou espaço).';
+    txt.placeholder='20240137 7,2\n20240145 8,5\nMaria Eduarda Gonçalves 6,4';
+  }
+}
+async function carregarPendenciasExternas(){
+  const ano=+$('im-ano').value;
+  const el=$('im-pend-lista'); if(!el) return;
+  el.innerHTML='<p class="hint" style="margin:0">Carregando…</p>';
+  const {data:reds}=await sb.from('redacoes').select('id,rotulo,turma,data').eq('ano',ano).in('banca',['ENEM','Grade Externa']).eq('correcao_externa',true).order('turma').order('data');
+  let redsEscopo=(reds||[]);
+  if(minhasTurmas&&minhasTurmas.length) redsEscopo=redsEscopo.filter(r=>minhasTurmas.includes(r.turma));
+  if(!redsEscopo.length){ el.innerHTML='<p class="hint" style="margin:0">Nenhuma redação de correção externa cadastrada neste ano.</p>'; return; }
+  const ids=redsEscopo.map(r=>r.id);
+  const [{data:lancs},{data:mats}]=await Promise.all([
+    sb.from('lancamentos').select('redacao_id,matricula').in('redacao_id',ids),
+    sb.from('matriculas_ano').select('matricula,turma').eq('ano',ano).eq('ativo',true)
+  ]);
+  const totalPorTurma={}; (mats||[]).forEach(m=>{ totalPorTurma[m.turma]=(totalPorTurma[m.turma]||0)+1; });
+  const feitosPorRed={}; (lancs||[]).forEach(l=>{ feitosPorRed[l.redacao_id]=(feitosPorRed[l.redacao_id]||0)+1; });
+  const pendentes=redsEscopo.map(r=>{
+    const total=totalPorTurma[r.turma]||0;
+    const feitos=feitosPorRed[r.id]||0;
+    return {...r, total, feitos, faltam:Math.max(0,total-feitos)};
+  }).filter(r=>r.faltam>0 && r.total>0);
+  if(!pendentes.length){ el.innerHTML='<p class="hint" style="margin:0">Tudo lançado — nenhuma correção externa pendente.</p>'; return; }
+  el.innerHTML = pendentes.map(r=>`<div class="item clic" data-turma="${esc(r.turma)}" data-red="${r.id}">
+    <div class="info"><div class="m">${esc(TURMA_NOME[r.turma]||r.turma)} · ${esc(r.rotulo)}</div><div class="sub">${dataBR(r.data)} · faltam ${r.faltam} de ${r.total} alunos</div></div>
+    <div><span class="st falta">${r.faltam} pendentes</span></div>
+  </div>`).join('');
+  el.querySelectorAll('.item').forEach(it=>it.onclick=async()=>{
+    $('im-turma').value=it.dataset.turma;
+    await carregarImportRedacoes();
+    $('im-red').value=it.dataset.red;
+  });
 }
 function carregarSheetJS(){
   return new Promise((res,rej)=>{
@@ -2517,29 +2577,42 @@ let importValidos=[]; let importFaltas=[];
 async function preverImport(){
   const msg=$('im-msg'); msg.className='msg'; msg.textContent='';
   const redId=+$('im-red').value;
-  if(!redId){ msg.className='msg err'; msg.textContent='Selecione a redação ENEM de destino.'; return; }
+  const optSel=$('im-red').selectedOptions[0];
+  const bancaSel=optSel?optSel.dataset.banca:null;
+  if(!redId){ msg.className='msg err'; msg.textContent='Selecione a redação de destino.'; return; }
+  const ehEnem = bancaSel==='ENEM';
   const ano=+$('im-ano').value, turma=$('im-turma').value;
   const {data:alunos}=await sb.from('matriculas_ano').select('matricula,nome').eq('ano',ano).eq('turma',turma).eq('ativo',true);
   const matSet=new Set((alunos||[]).map(a=>a.matricula));
   const nomeParaMat={}; const nomesRepetidos=new Set();
   (alunos||[]).forEach(a=>{ if(!a.nome) return; const n=normNome(a.nome); if(nomeParaMat[n]!=null) nomesRepetidos.add(n); nomeParaMat[n]=a.matricula; });
   function isNumTok(x){ const n=Number(String(x).replace(',','.')); return x!=='' && !isNaN(n); }
+  const nNums = ehEnem ? 5 : 1;
   const linhas=$('im-txt').value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
   const rows=[];
   linhas.forEach(ln=>{
-    const tokens=ln.split(/[\s,;]+/).filter(Boolean);
-    if(!tokens.length) return;
     let idStr, numTokens, viaNome=false;
-    if(/^\d{3,}$/.test(tokens[0])){
-      // identificação por matrícula (comportamento original)
-      idStr=tokens[0]; numTokens=tokens.slice(1);
+    if(!ehEnem){
+      // formato "nota única": vírgula pode ser separador OU decimal, então não dá pra tokenizar por split — usa regex ancorada no fim da linha
+      const mNum=ln.match(/^(.*?)[\s,;]+(\d+(?:[.,]\d+)?)$/);
+      const ident=(mNum?mNum[1]:ln).trim();
+      if(!ident) return;
+      numTokens = mNum ? [mNum[2]] : [];
+      idStr=ident; viaNome=!/^\d{3,}$/.test(ident);
     } else {
-      // não começa com matrícula: tenta reconhecer pelo nome, olhando os números no final da linha
-      let nEnd=0;
-      for(let i=tokens.length-1;i>=0 && nEnd<5;i--){ if(isNumTok(tokens[i])) nEnd++; else break; }
-      const idTokens=tokens.slice(0, tokens.length-nEnd);
-      if(!idTokens.length) return; // linha só de números, sem identificador -> ignora
-      idStr=idTokens.join(' '); numTokens=tokens.slice(tokens.length-nEnd); viaNome=true;
+      const tokens=ln.split(/[\s,;]+/).filter(Boolean);
+      if(!tokens.length) return;
+      if(/^\d{3,}$/.test(tokens[0])){
+        // identificação por matrícula (comportamento original)
+        idStr=tokens[0]; numTokens=tokens.slice(1);
+      } else {
+        // não começa com matrícula: tenta reconhecer pelo nome, olhando os números no final da linha
+        let nEnd=0;
+        for(let i=tokens.length-1;i>=0 && nEnd<nNums;i--){ if(isNumTok(tokens[i])) nEnd++; else break; }
+        const idTokens=tokens.slice(0, tokens.length-nEnd);
+        if(!idTokens.length) return; // linha só de números, sem identificador -> ignora
+        idStr=idTokens.join(' '); numTokens=tokens.slice(tokens.length-nEnd); viaNome=true;
+      }
     }
     let problema=null, ajustado=false, falta=false;
     const vals=[];
@@ -2552,18 +2625,23 @@ async function preverImport(){
     }
     if(!problema){
       if(numTokens.length===0){ falta=true; }
-      else if(numTokens.length<5){ problema='faltam competências'; }
-      else {
+      else if(numTokens.length<nNums){ problema = ehEnem?'faltam competências':'valor inválido'; }
+      else if(ehEnem){
         for(let i=0;i<5;i++){
           let n=Number(String(numTokens[i]).replace(',','.'));
           if(isNaN(n)){ problema='valor inválido'; break; }
           const a=arred40(n); if(a!==n) ajustado=true; vals.push(a);
         }
+      } else {
+        let n=Number(String(numTokens[0]).replace(',','.'));
+        if(isNaN(n)){ problema='valor inválido'; }
+        else if(n<0||n>10){ problema='nota fora de 0 a 10'; }
+        else vals.push(+n.toFixed(2));
       }
     }
     if(!problema && !viaNome && !matSet.has(mat)) problema='matrícula não é da turma';
     let nota=null;
-    if(!problema && !falta) nota=calcNota('ENEM',{c1:vals[0],c2:vals[1],c3:vals[2],c4:vals[3],c5:vals[4]});
+    if(!problema && !falta) nota = ehEnem ? calcNota('ENEM',{c1:vals[0],c2:vals[1],c3:vals[2],c4:vals[3],c5:vals[4]}) : vals[0];
     rows.push({mat, exibicao, vals, nota, problema, ajustado, falta});
   });
   if(!rows.length){ msg.className='msg err'; msg.textContent='Nenhuma linha válida encontrada. Confira o formato.'; $('im-prev').classList.add('hide'); return; }
@@ -2575,13 +2653,19 @@ async function preverImport(){
     {n:importValidos.length, l:'Notas prontas para importar', color:'var(--brand2)'},
     {n:importFaltas.length, l:'Faltas identificadas', color: importFaltas.length?'var(--warn)':null},
     {n:comProblema, l:'Com problema', color: comProblema?'var(--danger)':null},
-    {n:ajustados, l:'Ajustadas p/ múltiplo de 40', color: ajustados?'var(--warn)':null}
+    ...(ehEnem?[{n:ajustados, l:'Ajustadas p/ múltiplo de 40', color: ajustados?'var(--warn)':null}]:[])
   ]);
-  let h='<thead><tr><th>Aluno</th><th class="num">C1</th><th class="num">C2</th><th class="num">C3</th><th class="num">C4</th><th class="num">C5</th><th class="num">Nota</th><th>Situação</th></tr></thead><tbody>';
+  let h = ehEnem
+    ? '<thead><tr><th>Aluno</th><th class="num">C1</th><th class="num">C2</th><th class="num">C3</th><th class="num">C4</th><th class="num">C5</th><th class="num">Nota</th><th>Situação</th></tr></thead><tbody>'
+    : '<thead><tr><th>Aluno</th><th class="num">Nota</th><th>Situação</th></tr></thead><tbody>';
   rows.forEach(r=>{
-    const cells = r.vals.length===5 ? r.vals.map(v=>`<td class="num">${v}</td>`).join('') : '<td colspan="5" class="det">—</td>';
     const sit = r.problema ? `<span class="pill f-lo">${esc(r.problema)}</span>` : r.falta ? `<span class="pill f-md">falta (sem nota)</span>` : (r.ajustado? '<span class="pill f-md">ok (ajustada)</span>' : '<span class="pill f-ok">ok</span>');
-    h+=`<tr><td class="mono">${esc(r.exibicao)}</td>${cells}<td class="num">${r.nota==null?'—':fmtN(r.nota)}</td><td>${sit}</td></tr>`;
+    if(ehEnem){
+      const cells = r.vals.length===5 ? r.vals.map(v=>`<td class="num">${v}</td>`).join('') : '<td colspan="5" class="det">—</td>';
+      h+=`<tr><td class="mono">${esc(r.exibicao)}</td>${cells}<td class="num">${r.nota==null?'—':fmtN(r.nota)}</td><td>${sit}</td></tr>`;
+    } else {
+      h+=`<tr><td class="mono">${esc(r.exibicao)}</td><td class="num">${r.nota==null?'—':fmtN(r.nota)}</td><td>${sit}</td></tr>`;
+    }
   });
   h+='</tbody>'; $('im-tbl').innerHTML=h;
   $('im-conf-msg').textContent=''; $('im-prev').classList.remove('hide');
@@ -2590,6 +2674,7 @@ async function confirmarImport(){
   const msg=$('im-conf-msg'); msg.className='msg';
   if(!importValidos.length && !importFaltas.length){ msg.className='msg err'; msg.textContent='Não há linhas prontas para importar.'; return; }
   const redId=+$('im-red').value; if(!redId){ msg.className='msg err'; msg.textContent='Selecione a redação.'; return; }
+  const optSel=$('im-red').selectedOptions[0]; const ehEnem=optSel&&optSel.dataset.banca==='ENEM';
   const totalMsg=`${importValidos.length} nota(s)`+(importFaltas.length?` e ${importFaltas.length} falta(s)`:'');
   if(!confirm(`Importar ${totalMsg}? Isso substitui lançamentos existentes dessas matrículas nesta redação.`)) return;
   const agora=new Date().toISOString();
@@ -2597,7 +2682,7 @@ async function confirmarImport(){
     ...importValidos.map(r=>({
       redacao_id:redId, matricula:r.mat, frequencia:'presente', data_correcao:hojeISO(),
       zero_direto:false, motivo_zero:null,
-      enem_c1:r.vals[0],enem_c2:r.vals[1],enem_c3:r.vals[2],enem_c4:r.vals[3],enem_c5:r.vals[4],
+      enem_c1:ehEnem?r.vals[0]:null,enem_c2:ehEnem?r.vals[1]:null,enem_c3:ehEnem?r.vals[2]:null,enem_c4:ehEnem?r.vals[3]:null,enem_c5:ehEnem?r.vals[4]:null,
       uece_t:null,uece_ng:null,uece_ce:null,uece_lne:null,unifor_erros:null,
       nota_final:r.nota, criado_por:perfil?perfil.login:null, atualizado_em:agora
     })),
@@ -2727,6 +2812,8 @@ function detalheLanc(banca,l){
   if(l.zero_direto) return 'Zero direto'+(l.motivo_zero?': '+l.motivo_zero:'');
   if(banca==='ENEM'){ if(l.enem_c1==null) return ''; return [1,2,3,4,5].map(i=>'C'+i+' '+l['enem_c'+i]).join(' · '); }
   if(banca==='UECE') return `T ${l.uece_t||0} · NG ${l.uece_ng||0} · CE ${l.uece_ce||0} · LNE ${l.uece_lne||0}`;
+  if(banca==='Grade Externa') return '';
+  if(banca==='Estrutura') return '';
   return `${l.unifor_erros||0} erros`;
 }
 function metricsHTML(items){
@@ -2844,8 +2931,8 @@ function compMiniCards(nomes, medias, seqPontos, turmaMedias){
     </div>`;
   }).join('') + `</div>`;
 }
-function bancaBarsHTML(medias){ // medias: {ENEM:v|null, UECE:v|null, UNIFOR:v|null}
-  const cores={ENEM:'var(--accent)',UECE:'var(--brand2)',UNIFOR:'#8C4E9E'};
+function bancaBarsHTML(medias){ // medias: {ENEM:v|null, UECE:v|null, UNIFOR:v|null, 'Grade Externa':v|null}
+  const cores={ENEM:'var(--accent)',UECE:'var(--brand2)',UNIFOR:'#8C4E9E','Grade Externa':'#8A7B4E'};
   const bancas=Object.keys(medias).filter(b=>medias[b]!=null);
   if(!bancas.length) return '';
   return bancas.map(b=>`<div class="banca-row"><span class="tag" style="color:${cores[b]}">${b}</span>
@@ -2991,7 +3078,7 @@ async function consAluno(){
     });
   }
 
-  const bancaMedias={}; ['ENEM','UECE','UNIFOR'].forEach(b=>{ bancaMedias[b]= bancaCnt[b] ? bancaSoma[b]/bancaCnt[b] : null; });
+  const bancaMedias={}; ['ENEM','UECE','UNIFOR','Grade Externa'].forEach(b=>{ bancaMedias[b]= bancaCnt[b] ? bancaSoma[b]/bancaCnt[b] : null; });
   const bancaHtml=bancaBarsHTML(bancaMedias);
   if(bancaHtml){ $('k-banca-panel').classList.remove('hide'); $('k-banca').innerHTML=bancaHtml; } else { $('k-banca-panel').classList.add('hide'); }
 
@@ -3130,34 +3217,45 @@ async function consBoletim(){
 
   // cabeçalho
   const eh3a = serieDe(turma)==='3';
+  const avpRed = !eh3a ? reds.find(r=>r.rotulo.startsWith('AVP')) : null;
   let head=`<thead><tr><th class="stick">Matrícula</th>`;
   if(eh3a) head+=`<th title="2ª maior nota da etapa">N1</th><th title="3ª maior nota da etapa">N3</th><th title="1ª maior nota da etapa">N2</th><th class="med" title="Média da Etapa: (N1+N3+N2+N2)/4, como no sistema oficial">ME</th>`;
+  else head+=`<th title="AVP da etapa">N1</th><th title="Nota de participação: 10 × (correções − faltas, mesmo justificadas) ÷ total de correções da etapa">N3</th><th title="Maior nota entre as demais redações, exceto a AVP">N2</th><th class="med" title="Média da Etapa: (N1+N3+N2+N2)/4">ME</th>`;
   reds.forEach(r=>{ const pz=(r.tipo==='comum'&&r.penalidade)?' *':''; head+=`<th title="${esc(dataBR(r.data))} · ${r.banca}${pz?' · penalidade −'+fmtN1(r.penalidade):''}">${esc(r.rotulo)}${pz}</th>`; });
   head+=`<th class="med" title="Média Geral da etapa">MG</th><th class="num" title="Faltas não justificadas na etapa">F</th></tr></thead>`;
 
   // linhas
   const colSoma=reds.map(()=>0), colCnt=reds.map(()=>0);
   let geralSoma=0, geralCnt=0, geralFaltas=0;
-  const csv=[['Matrícula','Nome', ...(eh3a?['N1','N3','N2','ME']:[]), 'Grupo', ...reds.map(r=>r.rotulo), 'MG', 'F']];
+  const csv=[['Matrícula','Nome', ...(eh3a?['N1','N3','N2','ME']:['N1(AVP)','N3(Participação)','N2(Maior)','ME']), 'Grupo', ...reds.map(r=>r.rotulo), 'MG', 'F']];
   let body='<tbody>';
   (alunos||[]).forEach(a=>{
-    let linSoma=0, linCnt=0; let tds=''; const notasAluno=[]; let faltasAluno=0;
+    let linSoma=0, linCnt=0; let tds=''; const notasAluno=[]; let faltasAluno=0, faltasPartic=0;
     const csvRow=[a.matricula, nomeCurto(nomeDe(a.matricula),2)||''];
     reds.forEach((r,j)=>{
       const l=cel[a.matricula+'|'+r.id];
       const nv=notaEfetiva(r, l);
-      if(nv!=null){ tds+=`<td>${pill(nv)}</td>`; linSoma+=nv; linCnt++; colSoma[j]+=nv; colCnt[j]++; notasAluno.push(nv); }
+      if(nv!=null){ tds+=`<td>${pill(nv)}</td>`; linSoma+=nv; linCnt++; colSoma[j]+=nv; colCnt[j]++; notasAluno.push({rotulo:r.rotulo, nv}); }
       else { tds+=`<td><span class="pill f-na">—</span></td>`; }
       if(l&&l.frequencia==='falta') faltasAluno++;
+      if(l&&(l.frequencia==='falta'||l.frequencia==='falta_justificada')) faltasPartic++;
     });
     const med=linCnt?linSoma/linCnt:null;
     if(med!=null){ geralSoma+=med; geralCnt++; }
     geralFaltas+=faltasAluno;
     let tdsExtra='';
     if(eh3a){
-      const H=notasAluno.slice().sort((x,y)=>y-x);
+      const H=notasAluno.map(x=>x.nv).sort((x,y)=>y-x);
       const H1=H[0]!=null?H[0]:null, H2=H[1]!=null?H[1]:null, H3=H[2]!=null?H[2]:null;
       const N1=H2, N2=H1, N3=H3;
+      const medOf=(N1!=null&&N2!=null&&N3!=null)?(N1+N3+N2+N2)/4:null;
+      tdsExtra=`<td>${N1==null?'<span class="pill f-na">—</span>':pill(N1)}</td><td>${N3==null?'<span class="pill f-na">—</span>':pill(N3)}</td><td>${N2==null?'<span class="pill f-na">—</span>':pill(N2)}</td><td class="med">${fmtN(medOf)}</td>`;
+      csvRow.push(N1==null?'':fmtN(N1), N3==null?'':fmtN(N3), N2==null?'':fmtN(N2), medOf==null?'':fmtN(medOf));
+    } else {
+      const N1 = avpRed ? notaEfetiva(avpRed, cel[a.matricula+'|'+avpRed.id]) : null;
+      const outras = notasAluno.filter(x=>!avpRed||x.rotulo!==avpRed.rotulo).map(x=>x.nv);
+      const N2 = outras.length ? Math.max(...outras) : null;
+      const N3 = reds.length ? +(10*(reds.length-faltasPartic)/reds.length).toFixed(1) : null;
       const medOf=(N1!=null&&N2!=null&&N3!=null)?(N1+N3+N2+N2)/4:null;
       tdsExtra=`<td>${N1==null?'<span class="pill f-na">—</span>':pill(N1)}</td><td>${N3==null?'<span class="pill f-na">—</span>':pill(N3)}</td><td>${N2==null?'<span class="pill f-na">—</span>':pill(N2)}</td><td class="med">${fmtN(medOf)}</td>`;
       csvRow.push(N1==null?'':fmtN(N1), N3==null?'':fmtN(N3), N2==null?'':fmtN(N2), medOf==null?'':fmtN(medOf));
@@ -3175,7 +3273,8 @@ async function consBoletim(){
   // rodapé: média da turma por redação
   let foot='<tfoot><tr><td class="stick">Média da turma</td>';
   if(eh3a) foot+='<td></td><td></td><td></td><td></td>';
-  const csvFoot=['Média da turma','', ...(eh3a?['','','','']:[])];
+  else foot+='<td></td><td></td><td></td><td></td>';
+  const csvFoot=['Média da turma','', ...(eh3a?['','','','']:['','','',''])];
   reds.forEach((r,j)=>{ const m=colCnt[j]?colSoma[j]/colCnt[j]:null; foot+=`<td>${fmtN1(m)}</td>`; csvFoot.push(m==null?'':fmtN(m)); });
   foot+=`<td class="med">${fmtN1(geralCnt?geralSoma/geralCnt:null)}</td><td class="num">${geralFaltas||''}</td></tr></tfoot>`;
   csvFoot.push(geralCnt?fmtN(geralSoma/geralCnt):'');
@@ -3204,6 +3303,7 @@ function imprimirBoletimEtapa(){
   if(!boletimImpressao) return;
   let corpo='<style>@page{size:landscape}.b-print-tbl{font-size:10px}.b-print-tbl th,.b-print-tbl td{padding:4px 6px}</style>';
   if(boletimImpressao.eh3a) corpo+='<p class="sub-note">N1, N3 e N2 são as notas na ordem de digitação do sistema oficial (2ª maior, 3ª maior e 1ª maior nota da etapa). ME (Média da Etapa) = (N1+N3+N2+N2)/4. MG = Média Geral. F = faltas não justificadas.</p>';
+  else corpo+='<p class="sub-note">N1 = AVP da etapa. N3 = Nota de participação (10 × correções presentes ÷ total de correções da etapa; toda falta conta, mesmo justificada). N2 = maior nota entre as demais redações, exceto a AVP. MG = Média Geral. F = faltas não justificadas.</p>';
   corpo+=`<table class="b-print-tbl">${boletimImpressao.tabela}</table>`;
   if(boletimImpressao.penalTxt) corpo+=`<p class="sub-note" style="margin-top:12px">${boletimImpressao.penalTxt}</p>`;
   abrirImpressao(boletimImpressao.titulo, boletimImpressao.sub, corpo);
@@ -3575,7 +3675,7 @@ function atualizarEtapasDT(){ $('dt-etapa').innerHTML='<option value="">Ano inte
 async function consDestaques(){
   const ano=+$('dt-ano').value, turma=$('dt-turma').value, etapa=$('dt-etapa').value;
   if(!turma){ dtDados=null; renderDestaques(); return; }
-  let q=sb.from('redacoes').select('id,rotulo,data,banca').eq('ano',ano).eq('turma',turma).in('banca',['ENEM','UECE','UNIFOR']).order('data').order('id');
+  let q=sb.from('redacoes').select('id,rotulo,data,banca').eq('ano',ano).eq('turma',turma).in('banca',['ENEM','UECE','UNIFOR','Grade Externa']).order('data').order('id');
   if(etapa) q=q.eq('etapa',+etapa);
   const [{data:reds},{data:mats}]=await Promise.all([
     q,
@@ -3586,8 +3686,8 @@ async function consDestaques(){
   const ids=reds.map(r=>r.id);
   const {data:lancs}=await sb.from('lancamentos').select('*').in('redacao_id',ids);
   const redById={}; reds.forEach(r=>redById[r.id]=r);
-  dtDados={ENEM:[],UECE:[],UNIFOR:[]};
-  ['ENEM','UECE','UNIFOR'].forEach(banca=>{
+  dtDados={ENEM:[],UECE:[],UNIFOR:[],'Grade Externa':[]};
+  ['ENEM','UECE','UNIFOR','Grade Externa'].forEach(banca=>{
     const redsBanca=reds.filter(r=>r.banca===banca);
     if(!redsBanca.length) return;
     const porAluno={}; matSet.forEach(mat=>porAluno[mat]={seq:[], compSeq:[[],[],[],[],[]]});
@@ -4353,7 +4453,7 @@ document.addEventListener('click',(e)=>{
   const cal=$('mini-cal'); if(!cal||cal.classList.contains('hide')) return;
   if(!cal.contains(e.target) && e.target!==$('hoje-cal-btn')) cal.classList.add('hide');
 });
-$('im-ano').onchange=carregarImportRedacoes; $('im-turma').onchange=carregarImportRedacoes; $('im-file').onchange=importArquivo; $('im-prever').onclick=preverImport; $('im-conf').onclick=confirmarImport;
+$('im-ano').onchange=()=>{ carregarImportRedacoes(); carregarPendenciasExternas(); }; $('im-turma').onchange=carregarImportRedacoes; $('im-red').onchange=atualizarFormatoImport; $('im-file').onchange=importArquivo; $('im-prever').onclick=preverImport; $('im-conf').onclick=confirmarImport;
 $('k-pdf').onclick=gerarBoletimAluno;
 $('bk-json').onclick=baixarBackup; $('bk-csv').onclick=baixarLancCSV;
 $('vc-btn').onclick=criarVinculo;
