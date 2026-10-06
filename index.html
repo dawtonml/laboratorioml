@@ -117,6 +117,12 @@
   .st.disp{background:var(--green-soft);color:var(--brand2-ink)}
   .item.item-disp{background:var(--green-soft);border-color:var(--brand2)}
   .st.pend{background:var(--line);color:var(--muted)}
+  .fbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .fchips{display:flex;gap:8px;flex-wrap:wrap}
+  .fchip{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;font-size:13.5px}
+  .fchip .n{background:var(--line);color:var(--ink);border-radius:10px;padding:0 8px;font-size:12px;font-weight:600;min-width:22px;text-align:center}
+  .fchip.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink)}
+  .fchip.on .n{background:#fff}
   .item.clic{cursor:pointer} .item.clic:hover{border-color:var(--ink)}
   .empty{text-align:center;color:var(--muted);font-size:13px;padding:20px;border:1px dashed var(--line-strong);border-radius:var(--radius)}
 
@@ -673,8 +679,12 @@
           </div>
         </div>
         <div class="hint" style="margin:0 0 10px">Clique num aluno para lançar. A lista segue a ordem dos horários.</div>
-        <div class="row-actions" style="margin-bottom:10px"><button id="x-marcar-faltas" style="border-color:var(--danger);color:var(--danger)">Marcar pendentes como falta</button></div>
+        <div class="fbar" style="margin-bottom:10px">
+          <div class="fchips" id="x-filtros"></div>
+          <button id="x-marcar-faltas" style="border-color:var(--danger);color:var(--danger);margin-left:auto">Marcar pendentes como falta</button>
+        </div>
         <div id="x-lista"></div>
+        <div class="empty hide" id="x-vazio-filtro">Nenhum aluno neste filtro.</div>
         <div class="empty hide" id="x-empty">Nenhum aluno neste grupo.</div>
       </div>
       </div><!-- fim lp-manual -->
@@ -1298,8 +1308,8 @@ function ordRotulo(rot, ordem){
   if(m && ordem[m[1]]!=null) return ordem[m[1]] + (+m[2])/100;
   return 999;
 }
-const MOTIVOS_ZERO = ['Fuga total ao tema','Não atendimento ao tipo textual','Texto insuficiente','Cópia integral dos textos motivadores','Fere os direitos humanos','Texto em branco','Anulado (desenhos, impropérios, identificação)','Desempenho insuficiente','Sem correção','Faltou à escrita'];
-const MOTIVOS_ZERO_SEM_MEDIA = ['Sem correção','Faltou à escrita'];
+const MOTIVOS_ZERO = ['Fuga total ao tema','Não atendimento ao tipo textual','Texto insuficiente','Cópia integral dos textos motivadores','Fere os direitos humanos','Texto em branco','Anulado (desenhos, impropérios, identificação)','Desempenho insuficiente','Faltou à escrita'];
+const MOTIVOS_ZERO_SEM_MEDIA = ['Faltou à escrita'];
 const CNAMES_ENEM = ['C1 · Norma culta','C2 · Compreensão da proposta','C3 · Organização dos argumentos','C4 · Coesão e mecanismos','C5 · Proposta de intervenção'];
 const ENEM_VALS = [0,40,80,120,160,200];
 const AVAL_OPCOES=[['excelente','Excelente'],['satisfatoria','Satisfatória'],['mediana','Mediana'],['incompleta','Incompleta'],['nao_realizada','Não realizada']];
@@ -2126,16 +2136,48 @@ async function abrirRedacao(){
   $('lanc-titulo').textContent=`${data.rotulo} · ${TURMA_NOME[data.turma]||data.turma}`;
   $('lanc-sub').innerHTML=`${data.data.split('-').reverse().join('/')} · <span class="red-chip">${data.banca}</span> · ${data.tipo==='prova'?'Prova':'Comum'}${data.etapa?' · '+data.etapa+'ª etapa':''}${data.eixo_tematico?' · '+eixoChip(data.eixo_tematico):''}${data.tema?' · <span style="font-style:italic;color:var(--muted)">'+esc(data.tema)+'</span>':''}`;
   $('lanc-area').classList.remove('hide');
+  lancFiltro='todos';
   listarParaLancar();
+}
+let lancFiltro='todos', lancItens=[];
+const LANC_TITULOS={
+  pendente:'Sem nenhum lançamento. São estes que o botão "Marcar pendentes como falta" atinge.',
+  semnota:'Presença marcada, mas a nota (ou avaliação) ainda não foi lançada.',
+  corrigido:'Presença com nota (ou avaliação) lançada.',
+  falta:'Falta ou falta justificada.',
+  dispensa:'Dispensados desta correção.'
+};
+function categoriaLancamento(l){
+  if(!l) return 'pendente';
+  if(l.frequencia==='dispensa') return 'dispensa';
+  if(l.frequencia==='falta'||l.frequencia==='falta_justificada') return 'falta';
+  if(redAtual.banca==='Atividade') return l.avaliacao?'corrigido':'semnota';
+  return notaEfetiva(redAtual,l)!=null ? 'corrigido' : 'semnota';
+}
+function aplicarFiltroLancar(){
+  const cont={todos:lancItens.length,pendente:0,semnota:0,corrigido:0,falta:0,dispensa:0};
+  lancItens.forEach(x=>cont[x.cat]++);
+  const opcionais=['semnota','dispensa'];                       // só aparecem quando há alguém nessa situação
+  if(opcionais.includes(lancFiltro) && !cont[lancFiltro]) lancFiltro='todos';
+  const ativ=redAtual.banca==='Atividade';
+  const rot={todos:'Todos',pendente:'Pendentes',semnota:ativ?'Sem avaliação':'Sem nota',corrigido:ativ?'Avaliados':'Corrigidos',falta:'Faltosos',dispensa:'Dispensas'};
+  $('x-filtros').innerHTML=['todos','pendente','semnota','corrigido','falta','dispensa']
+    .filter(k=>!opcionais.includes(k)||cont[k]>0)
+    .map(k=>`<button type="button" class="fchip${lancFiltro===k?' on':''}" data-f="${k}"${LANC_TITULOS[k]?` title="${esc(LANC_TITULOS[k])}"`:''}>${rot[k]}<span class="n">${cont[k]}</span></button>`).join('');
+  $('x-filtros').querySelectorAll('.fchip').forEach(b=>b.onclick=()=>{ lancFiltro=b.dataset.f; aplicarFiltroLancar(); });
+  let visiveis=0;
+  lancItens.forEach(x=>{ const mostra=lancFiltro==='todos'||x.cat===lancFiltro; x.el.classList.toggle('hide',!mostra); if(mostra) visiveis++; });
+  $('x-vazio-filtro').classList.toggle('hide',!(lancItens.length>0 && visiveis===0));
+  const bt=$('x-marcar-faltas'); bt.disabled=!cont.pendente; bt.style.opacity=cont.pendente?'':'.45';
 }
 async function listarParaLancar(){
   const grupo=$('x-grupo').value;
   let q=sb.from('matriculas_ano').select('matricula,grupo,horario,nome').eq('ano',redAtual.ano).eq('turma',redAtual.turma).eq('ativo',true).order('horario');
   if(grupo)q=q.eq('grupo',+grupo);
   const {data:alunos}=await q;
-  const {data:lancs}=await sb.from('lancamentos').select('matricula,frequencia,nota_final,zero_direto,avaliacao').eq('redacao_id',redAtual.id);
+  const {data:lancs}=await sb.from('lancamentos').select('matricula,frequencia,nota_final,zero_direto,motivo_zero,avaliacao').eq('redacao_id',redAtual.id);
   const porMat={}; (lancs||[]).forEach(l=>porMat[l.matricula]=l);
-  const lista=$('x-lista'); lista.innerHTML='';
+  const lista=$('x-lista'); lista.innerHTML=''; lancItens=[];
   $('x-empty').classList.toggle('hide',(alunos||[]).length>0);
   (alunos||[]).forEach(a=>{
     const l=porMat[a.matricula]; let st='<span class="st pend">Pendente</span>'; let statusCls='';
@@ -2158,7 +2200,9 @@ async function listarParaLancar(){
       <div style="text-align:right">${st}</div>`;
     d.onclick=()=>abrirModal(a);
     lista.appendChild(d);
+    lancItens.push({cat:categoriaLancamento(l), el:d});
   });
+  aplicarFiltroLancar();
 }
 async function marcarPendentesFalta(){
   if(!redAtual) return;
@@ -2222,7 +2266,8 @@ async function abrirModal(a){
   // frequência
   setFreq(data?data.frequencia:null);
   // zero
-  $('md-zero').checked=data?data.zero_direto:false;
+  // "Sem correção" foi aposentado (a Dispensa cobre esse caso): registros antigos abrem como falta comum, sem zero direto
+  $('md-zero').checked=data?(!!data.zero_direto && data.motivo_zero!=='Sem correção'):false;
   $('md-motivo').innerHTML='<option value="">Escolha o motivo…</option>'+MOTIVOS_ZERO.map(m=>`<option value="${m}">${m}</option>`).join('');
   if(data&&data.motivo_zero)$('md-motivo').value=data.motivo_zero;
   // data correção
